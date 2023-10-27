@@ -1,0 +1,40 @@
+{
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "C/C++: g++ build active file",
+            "command": "/usr/bin/g++",
+            "args": [
+                "-DBOOST_LOG_DYN_LINK",
+                "-fdiagnostics-color=always",
+                "-g",
+                "*.cpp",
+                "-lboost_log",
+                "-lboost_log_setup",
+                "-lboost_thread",
+                "-lconfig4cpp",
+                "-pthread",
+                "-fopenmp",
+                "-I",
+                "/home/nat/Documents/config4cpp/include",
+                "-L",
+                "/home/nat/Documents/config4cpp/lib/libconfig4cpp.so",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}.exe",
+                "--verbose"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": true
+            }
+        }
+    ],
+    "version": "2.0.0"
+}

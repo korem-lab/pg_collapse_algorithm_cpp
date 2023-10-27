@@ -1,0 +1,84 @@
+2023-10-27 13:55:43  140737352353728  [info]	Initializing... 
+2023-10-27 13:55:43  140737352353728  [info]	
+>>>> config.ini <<<< 
+--------------------
+edge_color_file_ext=.ecolor.csv
+length_threshold=1000
+gfa_file_ext=.gfa
+epsilon=20
+remove_duplicates=true
+keep_short_ext=false
+node_color_file_ext=.ncolor.csv
+sensitive_mode=false
+large_gap=2.0
+fasta_file_ext=.fasta
+log_file_dir=logs
+sample_list=/home/nat/Documents/GitHub/data/sample_5_megahit_20M.pe_ext_all.fasta
+high_freq_kmer_filter=1e-5
+max_separation=75
+app_name=pg_collapse_algo
+max_jump=200
+graph_pref=demo
+output_dir=/home/nat/Documents/GitHub/data/output
+divergence_threshold=0.02
+window_size=10
+num_threads=10
+asymmetric=false
+small_gap=0.5
+kmer_size=15
+flank_size=300
+min_overlap=100
+
+2023-10-27 13:55:43  140737352353728  [info]	Parsing the fasta_file
+2023-10-27 13:55:43  140737352353728  [info]	Parsing file /home/nat/Documents/GitHub/data/sample_5_megahit_20M.pe_ext_all.fasta
+2023-10-27 13:55:44  140737352353728  [debug]	Contigs size: 84461
+2023-10-27 13:55:45  140737352353728  [info]	Saved processed fasta file to /home/nat/Documents/GitHub/data/output/demo_processed_input.fasta
+2023-10-27 13:55:45  140737352353728  [info]	Align contigs for demo
+2023-10-27 13:55:45  140737352353728  [info]	Sketching 84461 contigs.
+2023-10-27 13:55:45  140737352353728  [info]	counting kmers...
+2023-10-27 13:57:33  140737352353728  [info]	total kmers: 107857664
+2023-10-27 13:59:01  140737352353728  [info]	total avoided high-frequency kmers 1079
+2023-10-27 13:59:01  140737352353728  [info]	Sketching kmers...
+2023-10-27 13:59:42  140737352353728  [debug]	Sketched 84461 kmers
+2023-10-27 14:00:16  140737352353728  [info]	Completed sketch_contigs: 84461
+2023-10-27 14:00:16  140737352353728  [debug]	Transferring 0 of sketches... 
+2023-10-27 14:00:18  140737352353728  [debug]	Transferring 10000 of sketches... 
+2023-10-27 14:00:22  140737352353728  [debug]	Transferring 20000 of sketches... 
+2023-10-27 14:00:24  140737352353728  [debug]	Transferring 30000 of sketches... 
+2023-10-27 14:00:27  140737352353728  [debug]	Transferring 40000 of sketches... 
+2023-10-27 14:00:30  140737352353728  [debug]	Transferring 50000 of sketches... 
+2023-10-27 14:00:33  140737352353728  [debug]	Transferring 60000 of sketches... 
+2023-10-27 14:00:35  140737352353728  [debug]	Transferring 70000 of sketches... 
+2023-10-27 14:00:38  140737352353728  [debug]	Transferring 80000 of sketches... 
+2023-10-27 14:00:40  140737352353728  [info]	Building kmer map
+2023-10-27 14:00:40  140737352353728  [info]	Indexing 84461 contigs
+2023-10-27 14:01:06  140737352353728  [info]	Built kmer map: 54596249 entries
+2023-10-27 14:01:06  140737352353728  [info]	Launching chain_and_backtrack. Multithreaded? True
+2023-10-27 14:01:06  140737337353792  [debug]	analyzed contig 0
+2023-10-27 14:01:07  140737219917376  [debug]	analyzed contig 5000
+2023-10-27 14:01:08  140737211524672  [debug]	analyzed contig 10000
+2023-10-27 14:01:09  140737328961088  [debug]	analyzed contig 15000
+2023-10-27 14:01:10  140737186346560  [debug]	analyzed contig 20000
+2023-10-27 14:01:11  140737352353728  [debug]	analyzed contig 25000
+2023-10-27 14:01:12  140737203131968  [debug]	analyzed contig 30000
+2023-10-27 14:01:13  140737337353792  [debug]	analyzed contig 35000
+2023-10-27 14:01:14  140737161168448  [debug]	analyzed contig 40000
+2023-10-27 14:01:15  140737298732608  [debug]	analyzed contig 45000
+2023-10-27 14:01:16  140737337353792  [debug]	analyzed contig 50000
+2023-10-27 14:01:17  140737328961088  [debug]	analyzed contig 55000
+2023-10-27 14:01:18  140737135990336  [debug]	analyzed contig 60000
+2023-10-27 14:01:19  140737169561152  [debug]	analyzed contig 65000
+2023-10-27 14:01:21  140737135990336  [debug]	analyzed contig 70000
+2023-10-27 14:01:22  140737177953856  [debug]	analyzed contig 75000
+2023-10-27 14:01:22  140737161168448  [debug]	analyzed contig 80000
+2023-10-27 14:01:33  140737352353728  [info]	Merging per-thread alignments
+2023-10-27 14:01:33  140737352353728  [info]	Returning from Align
+2023-10-27 14:01:33  140737352353728  [info]	Num py_alignments: 588293
+2023-10-27 14:01:33  140737352353728  [info]	Construct node intervals for demo
+2023-10-27 14:03:44  140737352353728  [info]	Building coPanGraph for demo
+2023-10-27 14:03:44  140737352353728  [info]	Inputs are node_intervals: 173870, imptr: 84461, num_samples: 1
+2023-10-27 14:03:44  140737352353728  [info]	Building the graph
+2023-10-27 14:03:44  140737352353728  [debug]	Node_lookup size: 178225
+2023-10-27 14:03:44  140737352353728  [debug]	ivl_to_node size: 173870
+2023-10-27 14:03:44  140737352353728  [info]	writing to files
+2023-10-27 14:03:54  140737352353728  [info]	Complete!
