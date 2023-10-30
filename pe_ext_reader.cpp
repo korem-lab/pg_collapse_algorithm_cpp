@@ -2,14 +2,14 @@
 
 unsigned int PeExtReader::Parse(std::string& fasta_file_path, ContigContainerPtr out_contigContainer, IdMapPtr out_idmap)
 {
-    ParseFile(fasta_file_path, *out_contigContainer, out_idmap, 1);   
+    ParseFile(fasta_file_path, *out_contigContainer, out_idmap, 0);   
     SaveContigContainer(*out_contigContainer);
     return 1;
 }
 
 unsigned int PeExtReader::Parse(std::vector<std::string>& fasta_path_list, ContigContainerPtr out_contigContainer, IdMapPtr out_idmap)
 {
-    unsigned int fasta_file_num = 1;
+    unsigned int fasta_file_num = 0;
     for(auto fasta_file_path : fasta_path_list)
     {
         ParseFile(fasta_file_path, *out_contigContainer, out_idmap, fasta_file_num++);
