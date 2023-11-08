@@ -7,20 +7,21 @@
 template <class T>
 struct SetNode
 {
-    SetNode(T data): parent(this), rank(0), data(data) {}
+    SetNode(T data): parent_merge(this), parent_ep(this), rank(0), data(data) {}
 
-    SetNode* parent;
+    SetNode* parent_merge;
+    SetNode* parent_ep;
     uint64_t rank;
     T data;
 };
 
 template <class T>
-inline SetNode<T>* findSet(SetNode<T>* elem)
+inline SetNode<T>* findSetMerge(SetNode<T>* elem)
 {
-    if (elem->parent != elem)
+    if (elem->parent_merge != elem)
     {
-        elem->parent = findSet(elem->parent);
-        return elem->parent;
+        elem->parent_merge = findSetMerge(elem->parent_merge);
+        return elem->parent_merge;
     }
     else
     {
@@ -29,23 +30,52 @@ inline SetNode<T>* findSet(SetNode<T>* elem)
 }
 
 template <class T>
-void unionSet(SetNode<T>* const node1, SetNode<T>* const node2)
+void unionSetMerge(SetNode<T>* const node1, SetNode<T>* const node2)
 {
-    SetNode<T>* root1 = findSet(node1);
-    SetNode<T>* root2 = findSet(node2);
+    SetNode<T>* root1 = findSetMerge(node1);
+    SetNode<T>* root2 = findSetMerge(node2);
     if (root1 == root2) return;
 
     if (root1->rank > root2->rank)
     {
-        root2->parent = root1;
+        root2->parent_merge = root1;
     }
     else
     {
-        root1->parent = root2;
+        root1->parent_merge = root2;
         if (root1->rank == root2->rank)
         {
             ++root2->rank;
         }
+    }
+}
+template <class T>
+SetNode<T>* findSetEqvPt(SetNode<T>* elem)
+{
+    if (elem->parent_ep != elem)
+    {
+        elem->parent_ep = findSetEqvPt(elem->parent_ep);
+        return elem->parent_ep;
+    }
+    else
+    {
+        return elem;
+        return elem;
+    }
+}
+template <class T>
+void unionSetEqvPt(SetNode<T>* node1, SetNode<T>* node2)
+{
+    SetNode<T>* root1 = findSetEqvPt(node1);
+    SetNode<T>* root2 = findSetEqvPt(node2);
+    if (root1 == root2) return;
+    if (root1 < root2)
+    {
+        root2->parent_ep = root1;
+    }
+    else
+    {
+        root1->parent_ep = root2;
     }
 }
 
@@ -56,7 +86,7 @@ groupBySet(const std::vector<SetNode<T>*>& sets)
     std::unordered_map<SetNode<T>*, std::vector<T>> groups;
     for (auto& setNode : sets)
     {
-        groups[findSet(setNode)].push_back(setNode->data);
+        groups[findSetMerge(setNode)].push_back(setNode->data);
     }
     return groups;
 }

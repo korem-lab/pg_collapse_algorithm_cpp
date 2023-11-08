@@ -85,10 +85,10 @@ public:
     std::string end;
     char ori;
     bool is_tag = false;
-    std::string ToString() override { return " INFO:" + nid + ":" + full_name + ":" + Util::convert_to_string(sid) + ":" + contig_name + 
-        ":" + start + ":" + end + ":" + Util::convert_to_string(is_tag); }
+    std::string ToString() override { return "\tINFO:" + nid + ":" + full_name + ":" + Util::convert_to_string(sid) + ":" + contig_name + 
+        ":" + start + ":" + end + ":" + ori + ":" + Util::convert_to_string(is_tag); }
     std::string ToToken() override { return nid + ":" + Util::convert_to_string(sid) + ":" + contig_name + ":" + 
-        start + ":" + end + ":" +ori + ":" +  Util::convert_to_string(is_tag); }
+        start + ":" + end + ":" + ori + ":" +  Util::convert_to_string(is_tag); }
 };
 class GFASegment : public Element
 {
@@ -133,7 +133,7 @@ public:
     std::string ToString() override
     {
         auto hdr = ">" + m_nid + ":" + m_full_name + ":" + Util::convert_to_string(m_sid) + ":" + Util::convert_to_string(m_cid) +
-                   Util::convert_to_string(m_lp) + ":" + Util::convert_to_string(m_rp) + ":" + m_ori + ":" + Util::convert_to_string(m_is_tag);
+                   ":" + m_contig_name + ":" + Util::convert_to_string(m_lp) + ":" + Util::convert_to_string(m_rp) + ":" + m_ori + ":" + Util::convert_to_string(m_is_tag);
         hdr += "\n" + m_seq;
         return hdr;
     }
@@ -240,7 +240,7 @@ public:
         auto key_g_d_init = get_key(init_gamma, init_delta);
         if (common_numerals.find(key_g_d_init) == common_numerals.end())
             lookup[key_g_d_init] = nullptr;
-
+        
         if ((alpha == init_alpha && beta == init_beta) || (alpha == init_gamma && beta == init_delta) ||
             (gamma == init_alpha && delta == init_beta) || (gamma == init_gamma && delta == init_delta))
             oris = {i, '+'};
@@ -249,6 +249,9 @@ public:
             oris = {i, '-'};
         else
             throw "No relation between interval numerals and node numerals.";
+
+        if (name == "9560")
+            std::cout << name << " -> (" << oris.first << "," << oris.second << ") " << alpha << " " << beta << " " << gamma << " " << delta << "\n";
     }
 
 private:
@@ -322,12 +325,12 @@ public:
             if (node)
             {
                 node->add(i, ivl.alpha, ivl.beta, ivl.gamma, ivl.delta, node_lookup);
-                ivl_to_node.push_back(node);
+                ivl_to_node.push_back(new Node(*node));
             }
             else
             {
                 node = new Node(i, ivl.alpha, ivl.beta, ivl.gamma, ivl.delta);
-                ivl_to_node.push_back(node);
+                ivl_to_node.push_back(new Node(*node));
 
                 nodes.push_back(node);
 
@@ -350,16 +353,6 @@ public:
     void write_node_table(const std::string &node_table_name)
     {
         std::ofstream node_file(node_table_name, std::ios::out);
-        int **nt = new int *[nodes.size() + 1];
-
-        bool is_header = true;
-        for (int i = 0; i < intervals.size(); i++)
-        {
-            auto &n = ivl_to_node[i];
-            nt[n->uid] = new int[num_samples + 1];
-            nt[n->uid][0] = n->uid;
-            nt[n->uid][get_sid_of(i)] = num_samples;
-        }
 
         if (node_file.is_open())
         {
@@ -368,10 +361,11 @@ public:
                 node_file << "sample_" << i;
             node_file << "\n";
 
-            for (int i = 1; i < nodes.size() + 1; i++)
+            for (int i = 1; i <= nodes.size(); i++)
             {
-                for (int j = 0; j < num_samples + 1; j++)
-                    node_file << nt[i][j] << ",";
+                node_file << i << ",";
+                for (int j = 1; j <= num_samples; j++)
+                    node_file << j << (j < num_samples ? "," : "");
                 node_file << "\n";
             }
             node_file.close();
@@ -384,11 +378,12 @@ public:
         {
             if (intervals[i - 1].cid != intervals[i].cid)
                 continue;
-            auto u = ivl_to_node[i - 1]->GetName();
-            auto v = ivl_to_node[i]->GetName();
+            auto u = ivl_to_node[i - 1]->name;
+            auto v = ivl_to_node[i]->name;
             auto ori_u = get_orientation_of(i - 1);
             auto ori_v = get_orientation_of(i);
             auto line = u + "(" + ori_u + ") -> " + v + "(" + ori_v + ")";
+                        
             table_index.insert(line);
         }
         // std::sort(table_index.begin(), table_index.end()); // the set is already sorted?
@@ -396,7 +391,7 @@ public:
         if (edge_file.is_open())
         {
             edge_file << " ";
-            for(int j = 1; j <= num_samples; j++)
+            for(int j = 0; j < num_samples; j++)
                 edge_file << "sample_" << j << ",";
             edge_file << "\n";
             for (auto row : table_index)
@@ -465,25 +460,21 @@ public:
             tokens.insert(e->ToToken());
         std::cout << "seg-type-list.size(): " << seg_type_list.size() << std::endl;
         std::vector<pElement> out_list{};
-        std::ofstream seg_file("/home/nat/Documents/GitHub/data/seg_list.txt", std::ios::out);
+
         for (auto &e : seg_type_list)
         {
             auto tk = e->ToToken();
             if (tokens.find(tk) != tokens.end())
             {
                 out_list.push_back(e);
-                tokens.erase(tk);
-                seg_file << tk << "\n";
+                tokens.erase(tk);                
             }
             else if (!remove_identical)
             {
                 out_list.push_back(e);
-                seg_file << tk << "\n";
             }
         }
-        seg_file.close();
-        std::cout << "out_list.size() = " << out_list.size() << std::endl;
-
+        
         for (int i = 1; i < intervals.size(); i++)
         {
             if (intervals[i - 1].cid != intervals[i].cid)
@@ -495,8 +486,7 @@ public:
             GFALine gfa_link(u->GetName(), ori_u, v->name, ori_v, std::string{"0"});
             out_list.push_back(std::make_shared<GFALine>(gfa_link));
         }
-        std::cout << "out_list with gfaLink: " << out_list.size() << std::endl;
-
+       
         std::ofstream gfa_file(gfa_name, std::ios::out);
         if (gfa_file.is_open())
         {
@@ -516,7 +506,7 @@ public:
         auto start_of_contig = extended_contig.GetBwdExt();
         auto end_of_contig = extended_contig.GetBwdExt() + extended_contig.GetUnExtLen() + 1;
         bool is_tag = extended_contig.GetIsTag();
-        std::string seq = extended_contig.GetSeq()->substr(start, end);
+        std::string seq = extended_contig.GetSeq()->substr(start, end-start);
         std::string s_start, s_end;
 
         if (end < start_of_contig)

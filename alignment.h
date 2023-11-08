@@ -560,6 +560,9 @@ std::vector<PyAlignment> compute_alignments(ContigContainerPtr container)
 {
     auto k = config.GetValue<int>("kmer_size");
     auto divergence_threshold = config.GetValue<double>("divergence_threshold");
+    auto sensitive_mode = config.GetValue<bool>("sensitive_mode");
+    divergence_threshold -= sensitive_mode ? 0.02 : 0;
+    divergence_threshold = std::max(0.05, divergence_threshold);
     auto window_sz = config.GetValue<int>("window_size");
     auto num_of_threads = config.GetValue<int>("num_threads");
     return align_contigs(container, k, divergence_threshold, window_sz, num_of_threads);
