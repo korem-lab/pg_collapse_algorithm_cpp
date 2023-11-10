@@ -112,17 +112,8 @@ void build_kmer_map(std::unordered_map<std::string, std::vector<Coordinate>> & k
         contig_it++;
     }
 
-    int count = 0;
-    for(auto [kmer, coord] : kmer_map)
-    {
-        for(auto c : coord)
-        {
-            count++;
-        }
-        count ++;
-    }
     //kmer_map.size()
-    logger.Info("Built kmer map: " + Util::convert_to_string(count) + " entries");
+    logger.Info("Built kmer map: " + Util::convert_to_string(kmer_map.size()) + " entries");
 
 }
 
@@ -561,8 +552,8 @@ std::vector<PyAlignment> compute_alignments(ContigContainerPtr container)
     auto k = config.GetValue<int>("kmer_size");
     auto divergence_threshold = config.GetValue<double>("divergence_threshold");
     auto sensitive_mode = config.GetValue<bool>("sensitive_mode");
-    divergence_threshold -= sensitive_mode ? 0.02 : 0;
-    divergence_threshold = std::max(0.05, divergence_threshold);
+    divergence_threshold -= sensitive_mode ? 0 : 0.02;
+    divergence_threshold = std::max(0.005, divergence_threshold);
     auto window_sz = config.GetValue<int>("window_size");
     auto num_of_threads = config.GetValue<int>("num_threads");
     return align_contigs(container, k, divergence_threshold, window_sz, num_of_threads);
