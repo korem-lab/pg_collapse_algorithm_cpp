@@ -16,7 +16,7 @@ struct SetNode
 };
 
 template <class T>
-inline SetNode<T>* findSetMerge(SetNode<T>* elem)
+SetNode<T>* findSetMerge(SetNode<T>* elem)
 {
     if (elem->parent_merge != elem)
     {
@@ -30,7 +30,7 @@ inline SetNode<T>* findSetMerge(SetNode<T>* elem)
 }
 
 template <class T>
-void unionSetMerge(SetNode<T>* const node1, SetNode<T>* const node2)
+void unionSetMerge(SetNode<T>* node1, SetNode<T>* node2)
 {
     SetNode<T>* root1 = findSetMerge(node1);
     SetNode<T>* root2 = findSetMerge(node2);
@@ -60,7 +60,6 @@ SetNode<T>* findSetEqvPt(SetNode<T>* elem)
     else
     {
         return elem;
-        return elem;
     }
 }
 template <class T>
@@ -86,7 +85,7 @@ groupBySet(const std::vector<SetNode<T>*>& sets)
     std::unordered_map<SetNode<T>*, std::vector<T>> groups;
     for (auto& setNode : sets)
     {
-        groups[findSetMerge(setNode)].push_back(setNode->data);
+        groups[findSet(setNode)].push_back(setNode->data);
     }
     return groups;
 }

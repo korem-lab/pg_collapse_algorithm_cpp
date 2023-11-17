@@ -62,12 +62,14 @@ void PeExtReader::ParseFile(std::string& fasta_file_path, ContigContainer& out_c
                     {
                         econtig.m_hdr = econtig.m_sample_name + ":" + econtig.m_name + ":" + Util::convert_to_string(econtig.m_bwd_ext_sz) + ":0";
                         Util::get_first_chars(econtig.m_seq, flank_size + econtig.m_bwd_ext_sz);
+                        econtig.m_is_tag = true;
                         out_contigContainer.push_back(econtig);
                     }
                     else if(econtig.m_fwd_ext_sz >= min_adj_overlap)
                     {
                         econtig.m_hdr = econtig.m_sample_name + ":" + econtig.m_name + ":0:" + Util::convert_to_string(econtig.m_fwd_ext_sz);
                         Util::get_last_chars(econtig.m_seq, flank_size + econtig.m_fwd_ext_sz);
+                        econtig.m_is_tag = true;
                         out_contigContainer.push_back(econtig);
                     }               
                 }

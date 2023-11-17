@@ -163,9 +163,13 @@ public:
     Node() {}
     Node(int i, unsigned int alpha, unsigned int beta, unsigned int gamma, unsigned int delta) : uid{++uid_counter}, intervals{i}, init_alpha{alpha}, init_beta{beta}, init_gamma{gamma}, init_delta{delta}, oris{i, '+'}
     {
+        if (uid == 1 || uid == 28 || uid == 29)
+            bool stop = true;
         name = Util::convert_to_string(uid);
-        common_numerals.insert(get_key(init_alpha, init_beta));
-        common_numerals.insert(get_key(init_gamma, init_delta));
+        auto key1 = get_key(init_alpha, init_beta);
+        auto key2 = get_key(init_gamma, init_delta);
+        common_numerals.insert(key1);
+        common_numerals.insert(key2);
     }
     Node(const Node& n)
     {
@@ -177,7 +181,7 @@ public:
         init_delta = n.init_delta;
         init_gamma = n.init_gamma;
         uid = n.uid;
-        bool sorted = n.sorted;
+        sorted = n.sorted;
         oris = n.oris;
     }
     std::string GetFullName()
@@ -190,7 +194,10 @@ public:
             fullName.append(",");
             fullName.append(Util::convert_to_string(p.second));
             fullName.append(")");
+            fullName.append(",");
         }
+        if (fullName.find_last_of(',') == fullName.size() - 1)
+            fullName.erase(fullName.find_last_of(','));
         fullName.append("]");
         return fullName;
     }
@@ -231,6 +238,9 @@ public:
         std::set_intersection(common_numerals.begin(), common_numerals.end(), set2.begin(), set2.end(),
                               std::inserter(intersection, intersection.begin()));
 
+        if (uid == 1 || uid == 28 || uid == 29)
+            bool stop = true;
+
         common_numerals = intersection;
 
         auto key_a_b_init = get_key(init_alpha, init_beta);
@@ -249,12 +259,16 @@ public:
             oris = {i, '-'};
         else
             throw "No relation between interval numerals and node numerals.";
-
-        if (name == "9560")
-            std::cout << name << " -> (" << oris.first << "," << oris.second << ") " << alpha << " " << beta << " " << gamma << " " << delta << "\n";
     }
 
 private:
+    struct pair_comparer
+    { 
+        bool operator() (const std::pair<unsigned int, unsigned int>& p, const std::pair<unsigned int, unsigned int>& q) const
+        {
+            return p.first < q.first || (p.first == q.second ? p.second < q.second : false);
+        }
+    };
     friend class CoPanGraph;
     std::string name;
     std::vector<int> intervals;
@@ -325,12 +339,12 @@ public:
             if (node)
             {
                 node->add(i, ivl.alpha, ivl.beta, ivl.gamma, ivl.delta, node_lookup);
-                ivl_to_node.push_back(new Node(*node));
+                ivl_to_node.push_back(node);
             }
             else
             {
                 node = new Node(i, ivl.alpha, ivl.beta, ivl.gamma, ivl.delta);
-                ivl_to_node.push_back(new Node(*node));
+                ivl_to_node.push_back(node);
 
                 nodes.push_back(node);
 
@@ -509,6 +523,8 @@ public:
         std::string seq = extended_contig.GetSeq()->substr(start, end-start);
         std::string s_start, s_end;
 
+        if (format == "gfa" && (nid == "29" || nid == "28"))
+            bool stop = true;
         if (end < start_of_contig)
         {
             s_start = "0-" + Util::convert_to_string(abs(start - start_of_contig));

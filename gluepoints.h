@@ -77,7 +77,9 @@ struct Gluepoint {
     }
 };
 
-
+uint32_t abs(uint32_t a, uint32_t b) {
+    return (a > b)*(a - b) + (a <= b)*(b - a);
+}
 struct ClusterGenerator {
 
     ClusterGenerator(std::vector<Cluster<Point const *>> const & c): clusters(c)  {
@@ -96,17 +98,6 @@ struct ClusterGenerator {
     }
 };
 
-typedef std::vector<Gluepoint> GluepointList;
-typedef std::unordered_map<unsigned int, GluepointList> GluepointMap;
-typedef std::shared_ptr<GluepointMap> GluepointMapPtr;
-
-auto same_cluster_q = [](Point const & a, Point const & b, unsigned int max_separation) -> bool {
-    return ((a.q_pos > b.q_pos) && (a.q_pos - b.q_pos <= max_separation)) || ((a.q_pos <= b.q_pos) && (b.q_pos - a.q_pos <= max_separation));
-};
-
-auto same_cluster_s = [](Point const & a, Point const & b, unsigned int max_separation) -> bool {
-    return (a.s_cid == b.s_cid) && (((a.s_pos > b.s_pos) && (a.s_pos - b.s_pos <= max_separation)) || ((a.s_pos <= b.s_pos) && (b.s_pos - a.s_pos <= max_separation)));
-};
 
 template <typename Iterator, typename Lambda>
 unsigned int median(Iterator const & begin, Iterator const & end, Lambda && extract_val)
@@ -123,10 +114,18 @@ unsigned int median(Iterator const & begin, Iterator const & end, Lambda && extr
     }
 };
 
-uint32_t abs(uint32_t a, uint32_t b) {
-    return (a > b)*(a - b) + (a <= b)*(b - a);
-}
 
+typedef std::vector<Gluepoint> GluepointList;
+typedef std::unordered_map<unsigned int, GluepointList> GluepointMap;
+typedef std::shared_ptr<GluepointMap> GluepointMapPtr;
+
+auto same_cluster_q = [](Point const & a, Point const & b, unsigned int max_separation) -> bool {
+    return ((a.q_pos > b.q_pos) && (a.q_pos - b.q_pos <= max_separation)) || ((a.q_pos <= b.q_pos) && (b.q_pos - a.q_pos <= max_separation));
+};
+
+auto same_cluster_s = [](Point const & a, Point const & b, unsigned int max_separation) -> bool {
+    return (a.s_cid == b.s_cid) && (((a.s_pos > b.s_pos) && (a.s_pos - b.s_pos <= max_separation)) || ((a.s_pos <= b.s_pos) && (b.s_pos - a.s_pos <= max_separation)));
+};
 
 unsigned int abs_diff(unsigned int a, unsigned int b) {
     return (a > b)*(a - b) + (a <= b)*(b - a);
@@ -226,7 +225,7 @@ void initialize(
     bool is_end = true;
     for (auto & c : contigs) 
     {
-        unsigned int cid = c.GetId();        
+        unsigned int cid = c.GetId();     
         auto start = new SetNode<Breakpoint>(Breakpoint(cid, 0, PointType::START_RIGHT, true));
         auto end = new SetNode<Breakpoint>(Breakpoint(cid,static_cast<uint32_t> (c.GetLen()), PointType::END_LEFT, true));
 
@@ -412,10 +411,11 @@ void update_equivalent_points(SetNode<Breakpoint> * inducing_point,
             equivalent_point = bp; break;
         }
     }
-
-    // check if alrealy exists, and if not, add. This is purely to keep the size down.
+    unionSetEqvPt(inducing_point, equivalent_point);
     equivalent_points.insert(inducing_point);
     equivalent_points.insert(equivalent_point);
+
+    // check if alrealy exists, and if not, add. This is purely to keep the size down.
     //bool exists = false;
     //auto range = equivalent_points.equal_range(inducing_point);
     //for (auto it = range.first; it != range.second; it++) {
@@ -439,6 +439,18 @@ void update_equivalent_points(SetNode<Breakpoint> * inducing_point,
     //}
 }
 
+void connect_roots_through_equivalent_points(std::unordered_set<SetNode<Breakpoint> *> & equivalent_points) {
+    for (auto ptr : equivalent_points) {
+        auto root_m = findSetMerge(ptr);
+        auto root_m_ep = findSetMerge(findSetEqvPt(ptr));
+        if (root_m < root_m_ep) {
+            root_m_ep->parent_merge = root_m;
+        }
+        else {
+            root_m->parent_merge = root_m_ep;
+        }
+    }
+}
 
 void process_overlap(
     SetNode<Breakpoint> * const inducing_point,
@@ -604,6 +616,7 @@ void add_consensus_gluepoint(std::vector<SetNode<Breakpoint> *>::const_iterator 
 {
     size_t cluster_sz = (*(right_arr-1))->data.pos - (*left_arr)->data.pos;
     unsigned int cid = (*left_arr)->data.cid;
+    
     if (cluster_sz > max_separation) {
         consensus_gps.emplace_back(gp_id, cid, (*left_arr)->data.pos);
         unsigned int repeats = std::floor(cluster_sz / max_separation);
@@ -618,9 +631,11 @@ void add_consensus_gluepoint(std::vector<SetNode<Breakpoint> *>::const_iterator 
     {
         unsigned int consensus_pos = median(left_arr, right_arr, [](std::vector<SetNode<Breakpoint> *>::const_iterator const & a) -> 
                 unsigned int {return (*a)->data.pos;});
-        consensus_gps.emplace_back(gp_id, cid, consensus_pos);
+        consensus_gps.emplace_back(gp_id, cid, consensus_pos);        
     }
+
 }
+
 void merge_s_only_clusters(std::unordered_map<uint32_t, std::vector<Point> > & endpoints,
     std::unordered_map<uint32_t, std::vector<SetNode<Breakpoint>*>> & lookup,
     std::unordered_set<SetNode<Breakpoint> *> & equivalent_points, uint32_t max_separation) 
@@ -663,6 +678,8 @@ std::vector<Gluepoint> build_consensus_gluepoints(
     uint64_t id_gen_el = 7;
 
     uint64_t *id_gen_ptr;
+    int i = 0;
+    
     for (auto & [cid, bp_on_contigs] : lookup) {
         auto left_arr = bp_on_contigs.begin(), right_arr = bp_on_contigs.begin() + 1;
         // group and process the breakpoints
@@ -680,7 +697,7 @@ std::vector<Gluepoint> build_consensus_gluepoints(
             // Get the id of the gluepoint. If it's a new point, then the dictionary lookup will be 0
             // in which case, we need to assign a new gp_id to the glue point.
             auto set_ptr = findSetMerge(*left_arr);
-            uint64_t & gp_id = set_to_id[findSetMerge(*left_arr)];
+            uint64_t & gp_id = set_to_id[set_ptr];
             if (gp_id == 0) {
                 switch ((*left_arr)->data.pointType) {
                     case PointType::START_RIGHT:
@@ -696,8 +713,9 @@ std::vector<Gluepoint> build_consensus_gluepoints(
                 *id_gen_ptr += 4;
             }
             id_to_set[gp_id] = set_ptr;
-            add_consensus_gluepoint(left_arr, right_arr, consensus_gps, max_separation, gp_id);
 
+            add_consensus_gluepoint(left_arr, right_arr, consensus_gps, max_separation, gp_id);
+            
             // continue iteration
             left_arr = right_arr;
             right_arr++;
@@ -705,7 +723,7 @@ std::vector<Gluepoint> build_consensus_gluepoints(
         // empty the vector
         bp_on_contigs.clear();
     }
-
+        
     // construct the final gluepoints. Gluepoints of different type, but at distance < ms away from one another
     // will be grouped.
     auto min_breakpoint_comp = [&consensus_gps] (std::vector<Gluepoint>::iterator a, std::vector<Gluepoint>::iterator b) {
@@ -838,14 +856,22 @@ std::vector<Gluepoint> build_consensus_gluepoints(
     while (true_back > consensus_gps.begin() && !(true_back->sr || true_back->sl || true_back->er || true_back->el)) {
         true_back--;
     }
-    consensus_gps.erase(true_back+1, consensus_gps.end());
 
+
+    consensus_gps.erase(true_back+1, consensus_gps.end());
     return consensus_gps;
 }
 
 uint64_t minimize_point(uint64_t next_p, uint64_t min_p, std::unordered_multimap<uint64_t, uint64_t> const & id_eqv_pts,
-    std::unordered_set<uint64_t> & tracked)
+    std::unordered_set<uint64_t> & tracked,
+    std::unordered_map<uint64_t, uint64_t> const & min_lut)
 {
+    // already found the minimum of the graph in previous round.
+    auto memo_min = min_lut.find(next_p);
+    if (memo_min != min_lut.end()) {
+        return memo_min->second;
+    }
+
 
     if (next_p < min_p) {
         min_p = next_p;
@@ -869,7 +895,7 @@ uint64_t minimize_point(uint64_t next_p, uint64_t min_p, std::unordered_multimap
         tracked.insert(it->second);
 
         // explore it
-        min_p = minimize_point(it->second, min_p, id_eqv_pts, tracked);
+        min_p = minimize_point(it->second, min_p, id_eqv_pts, tracked, min_lut);
     }
     return min_p;
 }
@@ -879,82 +905,79 @@ void minimize_equivalent_points(std::vector<Gluepoint> & gps,
     std::unordered_map<SetNode<Breakpoint> *, uint64_t> & set_to_id,
     std::unordered_map<uint64_t, SetNode<Breakpoint> *> & id_to_set) 
 {
-
-    for (auto it = gps.begin(); it < gps.end(); it++) 
-    {
+    int i = 0;
+    for (auto it = gps.begin(); it < gps.end(); it++) {
         auto set_sr = id_to_set[it->sr];
         auto set_sl = id_to_set[it->sl];
         auto set_er = id_to_set[it->er];
         auto set_el = id_to_set[it->el];
+        
         if (set_sr) {
-            auto root_sr = findSetMerge(set_sr);
+            auto root_sr = findSetMerge(set_sr);            
             it->sr = set_to_id[root_sr];
         }
         if (set_sl) {
-            auto root_sl = findSetMerge(set_sl);
+            auto root_sl = findSetMerge(set_sl);            
             it->sl = set_to_id[root_sl];
         }
         if (set_er) {
-            auto root_er = findSetMerge(set_er);
+            auto root_er = findSetMerge(set_er);            
             it->er = set_to_id[root_er];
         }
         if (set_el) {
-            auto root_el = findSetMerge(set_el);
+            auto root_el = findSetMerge(set_el);            
             it->el = set_to_id[root_el];
         }
+        
     }
 }
 std::vector<SequenceInterval> build_sequence_intervals(std::vector<Gluepoint> const & gps) 
 {    // loop through gluepoint array and construct intervals
     std::vector<SequenceInterval> seq_ivls;
     seq_ivls.reserve(gps.size() -1);
-
+    int i = 0;
     for (auto it = gps.begin() + 1; it != gps.end(); it++) {
         if (it->cid != (it-1)->cid) {
             continue;
         }
-        seq_ivls.emplace_back((it-1)->sr, (it)->el, (it-1)->er, it->sl, it->cid, (it-1)->pos, it->pos);
+        seq_ivls.emplace_back((it-1)->sr, (it)->el, (it-1)->er, it->sl, it->cid, (it-1)->pos, it->pos);        
+        
     }
     
     return seq_ivls;
 }
 
 std::vector<SequenceInterval> cpp_gen_gp(std::vector<PyAlignment> & alignments, ContigContainerPtr contigs, uint32_t max_sep=75) {
-    std::cout << "construct endpoints from alignments" << std::endl;
+    std::cout << "construct endpoints from alignments\n";
     auto endpoints = construct_endpoints(alignments);
     std::cout << "cluster endpoints: " << endpoints->size() << std::endl;
     auto clusters_q_projection = cluster_endpoints(*endpoints, max_sep, true);
     std::cout << "clusters_q_projection size: " << clusters_q_projection.size() << std::endl;
-
     std::unordered_map<uint32_t, std::vector<SetNode<Breakpoint> *> > bp_lookup;
 
     std::cout << "Grouping breakpoints into breakpoint sets..." << std::endl;
     initialize(*contigs, bp_lookup);
     std::cout << "bp_lookup size: " << bp_lookup.size() << std::endl;
-
-    std::unordered_set<SetNode<Breakpoint> *> equivalent_points;
-    
+    std::unordered_set<SetNode<Breakpoint> *> equivalent_points;    
     group_breakpoints_into_gluepoints(*endpoints, equivalent_points, clusters_q_projection, alignments, bp_lookup, max_sep, true);
-    std::cout << "merging s-only clusters" << std::endl;
-    std::cout << "equivalent_points size: " << equivalent_points.size() << std::endl;
-    
+    std::cout << "merging s-only clusters\n";
+    std::cout << "equivalent_points size: " << equivalent_points.size() << std::endl;    
     merge_s_only_clusters(*endpoints, bp_lookup, equivalent_points, max_sep);
-    std::cout << "replace with root pointer" << std::endl;
     std::cout << "SIZE OF EQUIVALENT POINTS: " << equivalent_points.size() << std::endl;
     
-    std::cout << "Building consensus gluepoints from breakpoint sets..." << std::endl;
+    std::cout << "Building consensus gluepoints from breakpoint sets...\n";
     std::unordered_map<SetNode<Breakpoint> *, uint64_t> set_to_id;
     std::unordered_map<uint64_t, SetNode<Breakpoint> *> id_to_set;
     auto consensus_gluepoints = build_consensus_gluepoints(bp_lookup, set_to_id, id_to_set, max_sep);
     std::cout << "connecting roots through equivalent points...\n";
+    connect_roots_through_equivalent_points(equivalent_points);
 
-    std::cout << "Minimize equivalent points..." << std::endl;
+    std::cout << "Minimize equivalent points...\n";
     minimize_equivalent_points(consensus_gluepoints, set_to_id, id_to_set);
 
-    std::cout << "Build sequence intervals..." << std::endl;
+    std::cout << "Build sequence intervals...\n";
     auto seq_ivls = build_sequence_intervals(consensus_gluepoints);
-    std::cout << "seq_ivls.size(): " << seq_ivls.size() << "\n";    
-    
+    std::cout << "seq_ivls.size(): " << seq_ivls.size() << "\n";      
     return seq_ivls;
 }
 
