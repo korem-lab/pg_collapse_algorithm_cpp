@@ -1,12 +1,12 @@
 #ifndef ALIGNMENT_H
 #define ALIGNMENT_H
 
+#include "aux_functions.h"
 #include <omp.h>
 #include <iostream>
 #include <cmath>
 #include "ext_contig.h"
 #include "global_copan.h"
-#include "aux_functions.h"
 #include "minimizer.h"
 #include <tuple>
 
@@ -56,7 +56,7 @@ struct PyAlignment
 struct Kmer
 {
     Kmer(){};
-    Kmer(std::string& seq_, unsigned int pos_, uint8_t sign_):kmer{seq_}, pos{pos_}, sign{sign_}{}
+    Kmer(const std::string& seq_, unsigned int pos_, uint8_t sign_):kmer{seq_}, pos{pos_}, sign{sign_}{}
     std::string kmer;
     unsigned int pos;
     uint8_t sign;
@@ -65,8 +65,8 @@ struct Kmer
 struct Contig
 {
     Contig(){}
-    Contig(unsigned int cid_, unsigned int len_, std::vector<Kmer>& sketch_, std::string& hdr_):
-        cid{cid_}, len{len_}, hdr{hdr_} {sketch = sketch_;}
+    Contig(unsigned int cid_, unsigned int len_, const std::vector<Kmer>& sketch_, const std::string& hdr_):
+        cid{cid_}, len{len_}, hdr{hdr_}, sketch{sketch_}{}
     unsigned int cid;  // contig id
     unsigned int len;  // length of the contig
     std::vector<Kmer> sketch;
@@ -75,6 +75,7 @@ struct Contig
 
 struct Coordinate
 {
+    Coordinate(unsigned int pos, unsigned int cid, uint8_t s): s_pos{pos}, s_cid{cid}, sign{s}{}
     unsigned int s_pos;
     unsigned int s_cid;
     uint8_t sign;
@@ -89,24 +90,19 @@ void build_kmer_map(std::unordered_map<std::string, std::vector<Coordinate>> & k
     unsigned int i, j;
     
     logger.Info("Indexing " + Util::convert_to_string(contigs.size()) +  " contigs");
-
+    kmer_map.reserve(contigs.size() * 280);
     while(contig_it != contigs.end())
     {
         for(i = 0; i < contig_it->sketch.size(); i++)
         {
-            Coordinate coord;
-            coord.s_pos = contig_it->sketch[i].pos;
-            coord.s_cid = contig_it->cid;
-            coord.sign = contig_it->sketch[i].sign;
-
             auto it = kmer_map.find(contig_it->sketch[i].kmer);
             if (it == kmer_map.end())
             {
-                kmer_map[contig_it->sketch[i].kmer].push_back(coord);
+                kmer_map[contig_it->sketch[i].kmer].emplace_back(contig_it->sketch[i].pos, contig_it->cid, contig_it->sketch[i].sign);
             }
             else
             {
-                it->second.push_back(coord);
+                it->second.emplace_back(contig_it->sketch[i].pos, contig_it->cid, contig_it->sketch[i].sign);
             }
         }
         contig_it++;
@@ -121,15 +117,9 @@ bool sort_by_contig_then_pos(const Anchor& one, const Anchor& two)
 {
     if (one.s_cid < two.s_cid)
         return true;
-    else if (one.s_cid == two.s_cid and one.q_pos < two.q_pos)
+    else if (one.s_cid == two.s_cid && one.q_pos < two.q_pos)
         return true;
-    else
-    {
-        // The other options:
-        // one.s_cid >= two.s_cid, or one.q_pos >= two.q_pos
-        // both of which we say one is bigger than two
-        return false;
-    }
+    return false;
 }
 
 unsigned int abs_uint32_t(unsigned int a, unsigned int b)
@@ -189,7 +179,7 @@ int64_t get_max_chain_end(std::vector<double> & scrt)
     return max_idx;
 }
 
-std::vector<Alignment> chain_and_backtrack(std::vector<Contig>& container_buf, const Contig& contig, const std::unordered_map<std::string, std::vector<Coordinate>> & kmer_map,
+std::unique_ptr<std::vector<Alignment>> chain_and_backtrack(std::vector<Contig>& container_buf, const Contig& contig, const std::unordered_map<std::string, std::vector<Coordinate>> & kmer_map,
     const std::string& orientation, double divergence_threshold, unsigned int kmer_len, bool asymmentric, double large_gap = 2.0, 
     double small_gap = 0.5, unsigned int max_jump = 200, unsigned int min_overlap = 100)
 {
@@ -453,7 +443,7 @@ std::vector<Alignment> chain_and_backtrack(std::vector<Contig>& container_buf, c
         }
     }
 
-    return alignments;
+    return std::make_unique<std::vector<Alignment>>(alignments);
 }
 
 
@@ -470,8 +460,8 @@ std::vector<PyAlignment> align_contigs(ContigContainerPtr container, int k, doub
     double high_freq_kmer_filt = hfkf;
 
     logger.Info("Sketching " + Util::convert_to_string(N) + " contigs.");
-
-    auto sketches = * mzr::sketch_contigs(container, window_sz, kmer_len, 1-high_freq_kmer_filt);
+    std::vector<std::vector<mzr::Kmer>> sketches;
+    mzr::sketch_contigs(container, window_sz, kmer_len, 1-high_freq_kmer_filt, sketches);
     logger.Info("Completed sketch_contigs: " + Util::convert_to_string(sketches.size()));
 
     for(int i = 0; i < N; i++)
@@ -481,14 +471,13 @@ std::vector<PyAlignment> align_contigs(ContigContainerPtr container, int k, doub
 
         std::vector<Kmer> _s;
     
-        for (auto _k : sketches[i])
+        for (auto& _k : sketches[i])
         {
-            _s.push_back(Kmer(*_k.as_string(kmer_len), _k.pos, _k.sign));
+             _s.emplace_back(_k.as_string(kmer_len), _k.pos, _k.sign);
         }
 
         ExtContig ex = container->at(i);
-        Contig c(ex.GetId(), ex.GetSeq()->size(), _s, *ex.GetHeader());
-        container_buf.push_back(c);
+        container_buf.emplace_back(ex.GetId(), ex.GetLen(), _s, ex.Hdr);
     }     
 
     build_kmer_map(kmer_map, container_buf, kmer_len);
@@ -503,19 +492,19 @@ std::vector<PyAlignment> align_contigs(ContigContainerPtr container, int k, doub
     unsigned int max_jump = mj;
     unsigned int min_overlap = mo;
 
-    #pragma omp parallel shared(thrd_aln, container_buf, kmer_map)
+    //#pragma omp parallel shared(thrd_aln, container_buf, kmer_map)
     {
-        #pragma omp for schedule(dynamic)
+        //#pragma omp for schedule(dynamic)
         for(int i = 0; i < N; i++)
         {
-            #pragma omg task
+            //#pragma omg task
             {
                 if (i % 5000 == 0)
                     logger.Debug("analyzed contig " + Util::convert_to_string(i));
             }
-            #pragma omp task
+            //#pragma omp task
             {                
-                thrd_aln[i] = (chain_and_backtrack(container_buf, container_buf[i], kmer_map, FWD, divergence_threshold, kmer_len, asym, large_gap, 
+                thrd_aln[i] = *(chain_and_backtrack(container_buf, container_buf[i], kmer_map, FWD, divergence_threshold, kmer_len, asym, large_gap, 
                           small_gap, max_jump, min_overlap));
             }
         }    
@@ -525,23 +514,22 @@ std::vector<PyAlignment> align_contigs(ContigContainerPtr container, int k, doub
     logger.Info("Merging per-thread alignments");
     
     std::vector<PyAlignment> pyalignments;
+    pyalignments.reserve(250000);
     
     std::vector<std::vector<Alignment>>::const_iterator aln_contig_it = thrd_aln.begin();
     std::vector<Alignment>::const_iterator aln_it;
-    std::vector<KmerMatch>::const_iterator km_it;
 
     while(aln_contig_it != thrd_aln.end())
     {
         aln_it = aln_contig_it->begin();
         while(aln_it != aln_contig_it->end())
         {
-            pyalignments.push_back(PyAlignment(*aln_it));
+            pyalignments.emplace_back(*aln_it);
             aln_it++;
         }
         aln_contig_it++;
     }
    
-    logger.Info("Returning from Align");
     logger.Info("Num py_alignments: " + Util::convert_to_string(pyalignments.size()));   
     return pyalignments;
 }

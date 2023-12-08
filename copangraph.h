@@ -1,8 +1,9 @@
 #ifndef COPAN_GRAPH_H
 #define COPAN_GRAPH_H
+#include "aux_functions.h"
 #include <string>
 #include <vector>
-#include <unordered_map>
+#include <map>
 #include <exception>
 #include <set>
 #include <iostream>
@@ -12,7 +13,7 @@
 #include "ext_contig.h"
 #include "gluepoints.h"
 #include "pe_ext_reader.h"
-#include "ext_contig.h"
+
 
 template <>
 struct std::hash<std::pair<unsigned int, unsigned int>>
@@ -85,9 +86,9 @@ public:
     std::string end;
     char ori;
     bool is_tag = false;
-    std::string ToString() override { return "\tINFO:" + nid + ":" + full_name + ":" + Util::convert_to_string(sid) + ":" + contig_name + 
+    std::string ToString() override { return "\tINFO:" + nid + ":" + full_name + ":" + Util::convert_to_string<int>(sid) + ":" + contig_name + 
         ":" + start + ":" + end + ":" + ori + ":" + Util::convert_to_string(is_tag); }
-    std::string ToToken() override { return nid + ":" + Util::convert_to_string(sid) + ":" + contig_name + ":" + 
+    std::string ToToken() override { return nid + ":" + Util::convert_to_string<int>(sid) + ":" + contig_name + ":" + 
         start + ":" + end + ":" + ori + ":" +  Util::convert_to_string(is_tag); }
 };
 class GFASegment : public Element
@@ -104,7 +105,7 @@ public:
     //   f'{nid}:{sid}:{cid}:{lp}:{rp}:{ori}'
     std::string ToToken() override
     {
-        return m_rest.nid + ":" + Util::convert_to_string(m_rest.sid) + ":" + m_rest.contig_name + ":" + (m_rest.start) + ":" +
+        return m_rest.nid + ":" + Util::convert_to_string<int>(m_rest.sid) + ":" + m_rest.contig_name + ":" + (m_rest.start) + ":" +
                (m_rest.end) + ":" + m_rest.ori;
     }
     std::string GetLine()
@@ -132,15 +133,15 @@ public:
 
     std::string ToString() override
     {
-        auto hdr = ">" + m_nid + ":" + m_full_name + ":" + Util::convert_to_string(m_sid) + ":" + Util::convert_to_string(m_cid) +
-                   ":" + m_contig_name + ":" + Util::convert_to_string(m_lp) + ":" + Util::convert_to_string(m_rp) + ":" + m_ori + ":" + Util::convert_to_string(m_is_tag);
+        auto hdr = ">" + m_nid + ":" + m_full_name + ":" + Util::convert_to_string<unsigned int>(m_sid) + ":" + Util::convert_to_string<unsigned int>(m_cid) +
+                   ":" + m_contig_name + ":" + Util::convert_to_string<unsigned int>(m_lp) + ":" + Util::convert_to_string<unsigned int>(m_rp) + ":" + m_ori + ":" + Util::convert_to_string(m_is_tag);
         hdr += "\n" + m_seq;
         return hdr;
     }
     std::string ToToken() override
     {
-        return m_nid + ":" + Util::convert_to_string(m_sid) + ":" + Util::convert_to_string(m_cid) +
-               Util::convert_to_string(m_lp) + ":" + Util::convert_to_string(m_rp) + ":" + m_ori;
+        return m_nid + ":" + Util::convert_to_string<unsigned int>(m_sid) + ":" + Util::convert_to_string<unsigned int>(m_cid) +
+               Util::convert_to_string<unsigned int>(m_lp) + ":" + Util::convert_to_string<unsigned int>(m_rp) + ":" + m_ori;
     }
 
 private:
@@ -161,11 +162,10 @@ class Node
 {
 public:
     Node() {}
-    Node(int i, unsigned int alpha, unsigned int beta, unsigned int gamma, unsigned int delta) : uid{++uid_counter}, intervals{i}, init_alpha{alpha}, init_beta{beta}, init_gamma{gamma}, init_delta{delta}, oris{i, '+'}
+    Node(int i, unsigned int alpha, unsigned int beta, unsigned int gamma, unsigned int delta) : uid{++uid_counter}, intervals{i}, init_alpha{alpha}, init_beta{beta}, init_gamma{gamma}, init_delta{delta}
     {
-        if (uid == 1 || uid == 28 || uid == 29)
-            bool stop = true;
-        name = Util::convert_to_string(uid);
+        oris[i] = '+';
+        name = Util::convert_to_string<int>(uid);
         auto key1 = get_key(init_alpha, init_beta);
         auto key2 = get_key(init_gamma, init_delta);
         common_numerals.insert(key1);
@@ -190,9 +190,9 @@ public:
         for (auto p : common_numerals)
         {
             fullName.append("(");
-            fullName.append(Util::convert_to_string(p.first));
+            fullName.append(Util::convert_to_string<unsigned int>(p.first));
             fullName.append(",");
-            fullName.append(Util::convert_to_string(p.second));
+            fullName.append(Util::convert_to_string<unsigned int>(p.second));
             fullName.append(")");
             fullName.append(",");
         }
@@ -220,26 +220,20 @@ public:
     {
         return "Node(a=" + Util::convert_to_string(init_alpha) + ",b=" + Util::convert_to_string(init_beta) +
                ",g=" + Util::convert_to_string(init_gamma) + ",d=" + Util::convert_to_string(init_delta) + ", name=" +
-               GetName() + ",ivl=" + Util::convert_to_csv(intervals) + ",oris=" + std::string{oris.second} + ")";
+               GetName() + ",ivl=" + Util::convert_to_csv(intervals) + ",oris=" + Util::convert_to_csv(oris) + ")";
     }
+
     void add(int i, unsigned int alpha, unsigned int beta, unsigned int gamma, unsigned int delta,
-             std::unordered_map<std::pair<unsigned int, unsigned int>, Node *> &lookup)
+             std::map<std::pair<unsigned int, unsigned int>, Node *> &lookup)
     {
         intervals.push_back(i);
 
         auto key_a_b = get_key(alpha, beta);
         auto key_g_d = get_key(gamma, delta);
 
-        std::set<std::pair<unsigned int, unsigned int>> intersection{};
-        std::set<std::pair<unsigned int, unsigned int>> set2{};
-        set2.insert(key_a_b);
-        set2.insert(key_g_d);
+        std::unordered_set<std::pair<unsigned int, unsigned int>> intersection{};
 
-        std::set_intersection(common_numerals.begin(), common_numerals.end(), set2.begin(), set2.end(),
-                              std::inserter(intersection, intersection.begin()));
-
-        if (uid == 1 || uid == 28 || uid == 29)
-            bool stop = true;
+        set_intersection(intersection, key_a_b, key_g_d);
 
         common_numerals = intersection;
 
@@ -253,34 +247,38 @@ public:
         
         if ((alpha == init_alpha && beta == init_beta) || (alpha == init_gamma && beta == init_delta) ||
             (gamma == init_alpha && delta == init_beta) || (gamma == init_gamma && delta == init_delta))
-            oris = {i, '+'};
+            oris[i] = '+';
         else if ((alpha == init_beta && beta == init_alpha) || (alpha == init_delta && beta == init_gamma) ||
                  (gamma == init_beta && delta == init_alpha) || (gamma == init_delta && delta == init_gamma))
-            oris = {i, '-'};
+            oris[i] = '-';
         else
             throw "No relation between interval numerals and node numerals.";
     }
 
 private:
-    struct pair_comparer
-    { 
-        bool operator() (const std::pair<unsigned int, unsigned int>& p, const std::pair<unsigned int, unsigned int>& q) const
-        {
-            return p.first < q.first || (p.first == q.second ? p.second < q.second : false);
-        }
-    };
+    void set_intersection(std::unordered_set<std::pair<unsigned int, unsigned int>>& intersection, 
+        std::pair<unsigned int, unsigned int>& key_a_b, std::pair<unsigned int, unsigned int>& key_g_d)
+    {
+        for (const std::pair<unsigned int, unsigned int>& p: common_numerals) {
+            if (p.first == key_a_b.first && p.second == key_a_b.second)
+                intersection.insert(key_a_b);
+            if (p.first == key_g_d.first && p.second == key_g_d.second)
+                intersection.insert(key_g_d);
+        }   
+    }
     friend class CoPanGraph;
     std::string name;
     std::vector<int> intervals;
-    std::pair<int, char> oris;
+    std::unordered_map<int, char> oris;
     unsigned int init_alpha, init_beta, init_gamma, init_delta;
     int uid;
-    std::set<std::pair<unsigned int, unsigned int>> common_numerals;
+    std::unordered_set<std::pair<unsigned int, unsigned int>> common_numerals;
     bool sorted = false;
     static int uid_counter;
 };
 
 int Node::uid_counter = 0;
+typedef std::map<std::pair<unsigned int, unsigned int>, Node *> NodeMap;
 
 class CoPanGraph
 {
@@ -291,7 +289,7 @@ private:
     const unsigned num_samples;
     std::vector<Node*> nodes{};
     std::vector<Node*> ivl_to_node{};
-    std::unordered_map<std::pair<unsigned int, unsigned int>, Node *> node_lookup{};
+    NodeMap node_lookup{};
 
 public:
     CoPanGraph(std::vector<SequenceInterval> &seq_intervals, ContigContainerPtr contig_container_ptr, IdMapPtr contig_to_sample_map, unsigned int num_of_samples) : intervals{seq_intervals}, contig_container{contig_container_ptr}, cid_to_sid{contig_to_sample_map}, num_samples{num_of_samples}
@@ -307,7 +305,7 @@ public:
     }
     char get_orientation_of(int i)
     {
-        return ivl_to_node[i]->oris.second;
+        return ivl_to_node[i]->oris[i];
     }
     int get_sid_of(int i)
     {
@@ -317,12 +315,14 @@ public:
     {
         return intervals[i].cid;
     }
-
     void build_graph()
     {
+        std::ofstream int_file1("/home/nat/Documents/GitHub/data/output/c__intervals.txt", std::ios::out);
         for (int i = 0; i < intervals.size(); i++)
-        {
-            auto ivl = intervals[i];
+        {           
+            auto ivl = intervals[i];             
+            int_file1 << ivl.cid << ": " << ivl.start << "," << ivl.end << "\n";
+            
             auto key_a_b = get_key(ivl.alpha, ivl.beta);
             auto key_g_d = get_key(ivl.gamma, ivl.delta);
 
@@ -336,6 +336,7 @@ public:
                 node = node_lookup[key_g_d];
             }
 
+
             if (node)
             {
                 node->add(i, ivl.alpha, ivl.beta, ivl.gamma, ivl.delta, node_lookup);
@@ -345,15 +346,18 @@ public:
             {
                 node = new Node(i, ivl.alpha, ivl.beta, ivl.gamma, ivl.delta);
                 ivl_to_node.push_back(node);
-
                 nodes.push_back(node);
 
                 node_lookup[key_a_b] = node;
                 node_lookup[key_g_d] = node;
             }
+            if (node->uid == 102 || node->uid == 103 || node->uid == 104)
+                std::cout << node->uid << " " << ivl.cid << std::endl;
         }
-        logger.Debug("Node_lookup size: " + Util::convert_to_string(node_lookup.size()));
-        logger.Debug("ivl_to_node size: " + Util::convert_to_string(ivl_to_node.size()));
+        int_file1.close();
+
+        logger.Debug("Node_lookup size: " + Util::convert_to_string<unsigned long>(node_lookup.size()));
+        logger.Debug("ivl_to_node size: " + Util::convert_to_string<unsigned long>(ivl_to_node.size()));
     }
 
     void output_graph(const std::string &gfa_name, const std::string &fasta_name, const std::string &node_table_name, const std::string &edge_table_name)
@@ -463,6 +467,8 @@ public:
             auto intervals = n->GetIntervalIndices();
             for (int i : intervals)
             {
+                auto cid = get_cid_of(i);
+                
                 auto e = build_elem(n->name, get_cid_of(i), get_start_of(i), get_end_of(i),
                                     n->GetFullName(), get_orientation_of(i), get_sid_of(i), "gfa");
                 seg_type_list.push_back(e);
@@ -475,7 +481,7 @@ public:
         std::cout << "seg-type-list.size(): " << seg_type_list.size() << std::endl;
         std::vector<pElement> out_list{};
 
-        for (auto &e : seg_type_list)
+        for (const pElement &e : seg_type_list)
         {
             auto tk = e->ToToken();
             if (tokens.find(tk) != tokens.end())
@@ -520,49 +526,48 @@ public:
         auto start_of_contig = extended_contig.GetBwdExt();
         auto end_of_contig = extended_contig.GetBwdExt() + extended_contig.GetUnExtLen() + 1;
         bool is_tag = extended_contig.GetIsTag();
-        std::string seq = extended_contig.GetSeq()->substr(start, end-start);
+        std::string seq = extended_contig.Seq.substr(start, end-start);
         std::string s_start, s_end;
-
-        if (format == "gfa" && (nid == "29" || nid == "28"))
+        if(nid == "97" && extended_contig.Name == "k141_48549")
             bool stop = true;
         if (end < start_of_contig)
         {
-            s_start = "0-" + Util::convert_to_string(abs(start - start_of_contig));
-            s_end = "0-" + Util::convert_to_string(abs(end - start_of_contig));
+            s_start = "0-" + Util::convert_to_string<unsigned int>(abs(start - start_of_contig));
+            s_end = "0-" + Util::convert_to_string<unsigned int>(abs(end - start_of_contig));
             is_tag = true;
         }
         else if (start < start_of_contig && start_of_contig <= end && end < end_of_contig)
         {
-            s_start = "0-" + Util::convert_to_string(abs(start - start_of_contig));
-            s_end = Util::convert_to_string(end - start_of_contig);
+            s_start = "0-" + Util::convert_to_string<unsigned int>(abs(start - start_of_contig));
+            s_end = Util::convert_to_string<unsigned int>(end - start_of_contig);
             is_tag = true;
         }
         else if (start_of_contig <= start && start < end_of_contig &&
                  start_of_contig <= end && end < end_of_contig)
         {
-            s_start = Util::convert_to_string(start - start_of_contig);
-            s_end = Util::convert_to_string(end - start_of_contig);
+            s_start = Util::convert_to_string<unsigned int>(start - start_of_contig);
+            s_end = Util::convert_to_string<unsigned int>(end - start_of_contig);
         }
         else if (start_of_contig <= start && start < end_of_contig && end >= end_of_contig)
         {
-            s_start = Util::convert_to_string(start - start_of_contig);
-            s_end = Util::convert_to_string(extended_contig.GetUnExtLen()) + "+" +
-                    Util::convert_to_string(end - end_of_contig);
+            s_start = Util::convert_to_string<unsigned int>(start - start_of_contig);
+            s_end = Util::convert_to_string<unsigned int>(extended_contig.GetUnExtLen()) + "+" +
+                    Util::convert_to_string<unsigned int>(end - end_of_contig);
             is_tag = true;
         }
         else if (start >= end_of_contig)
         {
-            s_start = Util::convert_to_string(extended_contig.GetUnExtLen()) + "+" +
-                      Util::convert_to_string(start - end_of_contig);
-            s_end = Util::convert_to_string(extended_contig.GetUnExtLen()) + "+" +
-                    Util::convert_to_string(end - end_of_contig);
+            s_start = Util::convert_to_string<unsigned int>(extended_contig.GetUnExtLen()) + "+" +
+                      Util::convert_to_string<unsigned int>(start - end_of_contig);
+            s_end = Util::convert_to_string<unsigned int>(extended_contig.GetUnExtLen()) + "+" +
+                    Util::convert_to_string<unsigned int>(end - end_of_contig);
             is_tag = true;
         }
         else if (start < start_of_contig && end >= end_of_contig)
         {
-            s_start = "0-" + Util::convert_to_string(start - start_of_contig);
-            s_end = Util::convert_to_string(extended_contig.GetUnExtLen()) +
-                    "+" + Util::convert_to_string(end - end_of_contig);
+            s_start = "0-" + Util::convert_to_string<unsigned int>(start - start_of_contig);
+            s_end = Util::convert_to_string<unsigned int>(extended_contig.GetUnExtLen()) +
+                    "+" + Util::convert_to_string<unsigned int>(end - end_of_contig);
             is_tag = true;
         }
         else
@@ -572,13 +577,13 @@ public:
 
         if (format == "fasta")
         {
-            auto cns = CopanNodeSeq(nid, full_name, sid, cid, *extended_contig.GetName(), start, end, ori, is_tag, seq);
+            auto cns = CopanNodeSeq(nid, full_name, sid, cid, extended_contig.Name, start, end, ori, is_tag, seq);
             return std::make_shared<CopanNodeSeq>(cns);
         }
         else if (format == "gfa")
         {
             Rest rest;
-            rest.contig_name = *extended_contig.GetName();
+            rest.contig_name = extended_contig.Name;
             rest.end = s_end;
             rest.full_name = full_name;
             rest.is_tag = is_tag;

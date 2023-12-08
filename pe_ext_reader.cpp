@@ -41,61 +41,73 @@ void PeExtReader::ParseFile(std::string& fasta_file_path, ContigContainer& out_c
             Util::trim_str(line);
             if (line.size() > 0 && line[0] == '>')
             {
-                ExtContig econtig(line, out_contigContainer.size());    
+                ExtContig econtig(line);    
                 econtig.m_sample_id = fasta_file_num; 
-                
+                econtig.m_contig_id = out_contigContainer.size(); 
+
                 (*out_idmap)[econtig.m_contig_id] = econtig.m_sample_id;
                 
                 while(configFile.peek() != '>' && !configFile.eof())                                      
                 {
                     std::getline(configFile, line);
                     Util::trim_str(line);
-                    econtig.m_seq.append(line);
-                }
-
-                econtig.m_unext_len = econtig.m_seq.size() - econtig.m_bwd_ext_sz - econtig.m_fwd_ext_sz;
-
-                if (remove_duplicates && unique_contigs.find(econtig.m_name) != unique_contigs.end() && 
-                    econtig.m_unext_len >= length_threshold)
+                    econtig.Seq.append(line);
+                }                
+                
+                auto unext_len = econtig.Seq.size() - econtig.m_bwd_ext_sz - econtig.m_fwd_ext_sz;       
+                if (remove_duplicates && unique_contigs.find(econtig.Name) != unique_contigs.end() && 
+                    unext_len >= length_threshold)
                 {
                     if (econtig.m_bwd_ext_sz >= min_adj_overlap)
                     {
-                        econtig.m_hdr = econtig.m_sample_name + ":" + econtig.m_name + ":" + Util::convert_to_string(econtig.m_bwd_ext_sz) + ":0";
-                        Util::get_first_chars(econtig.m_seq, flank_size + econtig.m_bwd_ext_sz);
+                        econtig.Hdr = econtig.SampleName + ":" + econtig.Name + ":" + Util::convert_to_string(econtig.m_bwd_ext_sz) + ":0";
+                        Util::get_first_chars(econtig.Seq, flank_size + econtig.m_bwd_ext_sz);
                         econtig.m_is_tag = true;
-                        out_contigContainer.push_back(econtig);
+                        econtig.m_unext_len = econtig.Seq.size() - econtig.m_bwd_ext_sz - econtig.m_fwd_ext_sz;                              
+                        out_contigContainer.push_back(econtig.Clone());
                     }
-                    else if(econtig.m_fwd_ext_sz >= min_adj_overlap)
+                    if(econtig.m_fwd_ext_sz >= min_adj_overlap)
                     {
-                        econtig.m_hdr = econtig.m_sample_name + ":" + econtig.m_name + ":0:" + Util::convert_to_string(econtig.m_fwd_ext_sz);
-                        Util::get_last_chars(econtig.m_seq, flank_size + econtig.m_fwd_ext_sz);
+                        econtig.Hdr = econtig.SampleName + ":" + econtig.Name + ":0:" + Util::convert_to_string(econtig.m_fwd_ext_sz);
+                        Util::get_last_chars(econtig.Seq, flank_size + econtig.m_fwd_ext_sz);
+                        econtig.m_unext_len = econtig.Seq.size() - econtig.m_bwd_ext_sz - econtig.m_fwd_ext_sz;       
                         econtig.m_is_tag = true;
-                        out_contigContainer.push_back(econtig);
+                        out_contigContainer.push_back(econtig.Clone());
                     }               
                 }
                 else
                 {
                     if (econtig.m_bwd_ext_sz > 0 && econtig.m_bwd_ext_sz < min_adj_overlap)
                     {
-                        Util::remove_first_chars(econtig.m_seq, econtig.m_bwd_ext_sz);
+                        Util::remove_first_chars(econtig.Seq, econtig.m_bwd_ext_sz);
                     }
                     if (econtig.m_fwd_ext_sz > 0 && econtig.m_fwd_ext_sz < min_adj_overlap)
                     {
-                        Util::remove_last_chars(econtig.m_seq, econtig.m_fwd_ext_sz);
-                    }                    
-
+                        Util::remove_last_chars(econtig.Seq, econtig.m_fwd_ext_sz);
+                    }            
+                    econtig.m_unext_len = unext_len;        
                     if (remove_duplicates)
-                        unique_contigs.insert(econtig.m_name);
+                        unique_contigs.insert(econtig.Name);
 
                     out_contigContainer.push_back(econtig);  
-                }
+                }                        
             }
         }
         logger.Debug("Contigs size: " + Util::convert_to_string(out_contigContainer.size()));
     }
     configFile.close();
 }
+/* std::string ExtContig::ToString()
+{
+    return GetHeader() + "\n" + this.Seq + "\n";
+}
 
+stringptr ExtContig::GetHeader()
+{
+    return std::make_unique<std::string>(">" + Util::convert_to_string<int>(-1) + ":" + SampleName + ":" + 
+        Util::convert_to_string<int>(-1) + ":" + Name + ":" + Util::convert_to_string<unsigned int>(m_bwd_ext_sz) + ":" +
+        Util::convert_to_string<unsigned int>(m_fwd_ext_sz) + ":" + Util::convert_to_string(m_is_tag));
+} */
 void PeExtReader::SaveContigContainer(ContigContainer& ccon)
 {
     auto prefix = config.GetValue<std::string>("graph_pref");
@@ -105,7 +117,19 @@ void PeExtReader::SaveContigContainer(ContigContainer& ccon)
     std::ofstream processed_input_fasta_file(processed_input_fasta_path);
     for(auto& econtig : ccon)
     {
-        processed_input_fasta_file << (*econtig.ToString());
+        processed_input_fasta_file << ">" + Util::convert_to_string<int>(-1) + ":" + econtig.SampleName + ":" + 
+        Util::convert_to_string<int>(-1) + ":" + econtig.Name + ":" + Util::convert_to_string<unsigned int>(econtig.m_bwd_ext_sz) + ":" +
+        Util::convert_to_string<unsigned int>(econtig.m_fwd_ext_sz) + ":" + Util::convert_to_string(econtig.m_is_tag) + "\n";
+        unsigned int i = 0;
+        const unsigned int fold = 80;
+        
+        while(i < econtig.Seq.size())
+        {
+            unsigned int rest = econtig.Seq.size() - i;
+            rest = std::min(rest, fold);
+            processed_input_fasta_file << econtig.Seq.substr(i, rest) << "\n";
+            i += fold;
+        }
     }
     processed_input_fasta_file.close();
 

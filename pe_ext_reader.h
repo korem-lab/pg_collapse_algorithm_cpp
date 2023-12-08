@@ -10,6 +10,7 @@
 #include "global_copan.h"
 #include "async_logger.h"
 #include "ext_contig.h"
+#include <algorithm>
 
 typedef std::unordered_map<int, int> IdMap;
 typedef std::shared_ptr<IdMap> IdMapPtr;

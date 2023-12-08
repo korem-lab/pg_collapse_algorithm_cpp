@@ -80,7 +80,17 @@ public:
     void Error(const std::string& message){
         enqueue(format_message(message, LogSeverity::ErrorLevel));
     }
-
+    
+    void Debug()
+    {
+        if (!m_log_queue.empty()) {                
+                std::string message = *dequeue(); 
+                if (message != "")
+                {        
+                    std::cout << message;
+                }
+            }
+    }
     void Start(const std::string& log_file_dir, const std::string& app_name) 
     {
         m_log_file.open(get_file_name(log_file_dir, app_name));
@@ -96,7 +106,7 @@ public:
                 }
             }
         }
-        });
+        });  
     }
 
   void Stop() {
@@ -109,7 +119,7 @@ public:
             m_logging_thread.join();
             m_log_file.close();
             break;
-        }
+        } 
     }
   }
 };

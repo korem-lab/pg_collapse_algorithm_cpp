@@ -51,26 +51,17 @@ int main(int argc, char *argv[])
     ContigContainerPtr ccptr(new ContigContainer());
     IdMapPtr imptr(new IdMap());
     
-    logger.Info("Parsing the fasta_file");
     auto num_samples = per.Parse(fasta_input_file, ccptr, imptr);
     
     auto rg_pref = config.GetValue<std::string>("graph_pref");
 
-    logger.Info("Align contigs for " + rg_pref);
     auto alignments = compute_alignments(ccptr);
     
     auto max_separation = config.GetValue<unsigned int>("max_separation");
-    logger.Info("Construct node intervals for " + rg_pref);
     GluepointMapPtr gmp = nullptr;
     auto node_intervals = cpp_gen_gp(alignments, ccptr, max_separation);
 
-    logger.Info("Building coPanGraph for " + rg_pref);
-    logger.Info("Inputs are node_intervals: " + Util::convert_to_string(node_intervals.size()) + ", imptr: " +
-        Util::convert_to_string(imptr->size()) + ", num_samples: " + Util::convert_to_string(num_samples));
-
-    
     auto copan = CoPanGraph(node_intervals, ccptr, imptr, num_samples);
-    logger.Info("Building the graph");
     copan.build_graph();
 
     logger.Info("writing to files");
@@ -80,14 +71,8 @@ int main(int argc, char *argv[])
     auto fasta_file = file_name + config.GetValue<std::string>("fasta_file_ext");
     auto ncolor_file = file_name + config.GetValue<std::string>("node_color_file_ext");
     auto ecolor_file = file_name + config.GetValue<std::string>("edge_color_file_ext");
-
     
     copan.output_graph(gfa_file, fasta_file ,ncolor_file, ecolor_file);
-
-
-/*
-    logger.Info("Printing the output for " + rg_pref);
-output_graph(rg, ccptr, imptr, rg_pref);  */
 
     logger.Info("Complete!"); 
     logger.Stop();

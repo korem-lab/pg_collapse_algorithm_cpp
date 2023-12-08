@@ -9,19 +9,12 @@
                 "-fdiagnostics-color=always",
                 "-g",
                 "*.cpp",
-                "-lboost_log",
-                "-lboost_log_setup",
-                "-lboost_thread",
-                "-lconfig4cpp",
                 "-pthread",
                 "-fopenmp",
-                "-I",
-                "/home/nat/Documents/config4cpp/include",
-                "-L",
-                "/home/nat/Documents/config4cpp/lib/libconfig4cpp.so",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}.exe",
-                "--verbose"
+                "--verbose",
+                "-O0"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

@@ -19,6 +19,11 @@ namespace mzr
 const uint8_t POSITIVE = 0;
 const uint8_t NEGATIVE = 1;
 
+uint8_t char_to_num(char c);
+uint8_t char_to_num_complement(char c);
+
+char num_to_char(uint8_t b);
+
 /* void my_assert(bool b, std::string m = "")
 {
     if (!b)
@@ -28,9 +33,16 @@ const uint8_t NEGATIVE = 1;
     }
 } */
 
-uint8_t char_to_num(char c, bool complement = false);
+const char int_to_char_map[] = {'A','C','G','T'};
 
-char num_to_char(uint8_t b);
+
+
+/* inline char num_to_char(uint8_t b)
+{
+    if (b < 4)
+        return int_to_char_map[b];
+    return 'N';
+} */
 
 struct Kmer
 {
@@ -38,9 +50,15 @@ struct Kmer
     unsigned int pos;
     uint8_t sign;
     Kmer(unsigned int s, unsigned int p, uint8_t sg) : seq(s), pos(p), sign(sg) {}
+    Kmer(const Kmer& k)
+    {
+        seq = k.seq;
+        pos = k.pos;
+        sign = k.sign;
+    }
     Kmer() : seq(0), pos(0), sign(POSITIVE){};
 
-    stringptr as_string(int8_t k) const
+    std::string as_string(int8_t k) const
     {
         unsigned int mask = 0x00000003;
         int8_t shift = k * 2 - 2;
@@ -51,7 +69,7 @@ struct Kmer
             kmer = kmer + num_to_char(base);
             shift -= 2;
         }
-        return std::make_unique<std::string>(kmer);
+        return (kmer);
     }    
 };
 
@@ -67,12 +85,12 @@ struct KmerGenerator
         // and it's reverse complement
         if (lex_low)
         {
-            std::string rev_seq(s);
-            std::reverse(rev_seq.begin(), rev_seq.end());
-            auto rev_seq_it = rev_seq.end() - k -  1;
-            rev_kmer = Kmer(pack(rev_seq_it + 1, rev_seq.end(), true), 0, NEGATIVE);
+            // std::string rev_seq(s);
+            // std::reverse(rev_seq.begin(), rev_seq.end());
+            // auto rev_seq_it = rev_seq.end() - k -  1;
+            // rev_kmer = Kmer(pack(rev_seq_it + 1, rev_seq.end(), true), 0, NEGATIVE);
 
-            auto rev_kmer2 = Kmer(pack_reverse(seq.begin(), seq_it, true), 0, NEGATIVE);
+            rev_kmer = Kmer(pack_reverse(seq.begin(), seq_it, true), 0, NEGATIVE);
         }
         init = true;
     }
@@ -86,26 +104,27 @@ struct KmerGenerator
 
     Kmer get_kmer()
     {
-        // first call
-        if (init)
+        
+        if (!init) // it's an intermediate call, and we need to pack a new base
+        {            
+            unsigned int pos = seq_it - k - seq.begin() + 1;
+            uint32_t n = char_to_num(*seq_it);
+
+            kmer = Kmer(mask & (kmer.seq << 2 | n), pos, POSITIVE);            
+
+            if (lxl)
+            {
+                uint32_t nc = char_to_num_complement(*seq_it);
+                rev_kmer = Kmer(mask & (rev_kmer.seq >> 2 | (nc << (k * 2 - 2))), pos, NEGATIVE);
+            }
+            seq_it++;
+            return (rev_kmer.seq < kmer.seq && lxl) ? rev_kmer : kmer;
+        }
+        else // first call
         {
             init = false;
             return (rev_kmer.seq < kmer.seq && lxl) ? rev_kmer : kmer;
         }
-
-        // otherwise, it's an intermediate call, and we need to pack a new base
-        unsigned int pos = seq_it - k - seq.begin() + 1;
-        uint32_t n = char_to_num(*seq_it);
-
-        kmer = Kmer(mask & (kmer.seq << 2 | char_to_num(*seq_it)), pos, POSITIVE);
-        n = char_to_num(*seq_it, true);
-
-        if (lxl)
-        {
-            rev_kmer = Kmer(mask & (rev_kmer.seq >> 2 | (char_to_num(*seq_it, true) << (k * 2 - 2))), pos, NEGATIVE);
-        }
-        seq_it++;
-        return (rev_kmer.seq < kmer.seq && lxl) ? rev_kmer : kmer;
     }
 
     Kmer min_kmer_in_window(uint8_t w) const
@@ -121,22 +140,24 @@ struct KmerGenerator
         uint8_t sign = (_kmer < _rev_kmer) ? POSITIVE : NEGATIVE;
 
         // point to the next unprocessed characters
+       
         while (f <= seq_it)
         {
-            if (_kmer < min_k)
-            {
-                min_k = _kmer;
-                min_pos = f - seq.begin() - k;
-                sign = POSITIVE;
-            }
             if (_rev_kmer < min_k)
             {
                 min_k = _rev_kmer;
                 min_pos = f - seq.begin() - k;
                 sign = NEGATIVE;
             }
+            else if (_kmer < min_k)
+            {
+                min_k = _kmer;
+                min_pos = f - seq.begin() - k;
+                sign = POSITIVE;
+            }
+            
             _kmer = mask & (_kmer << 2 | char_to_num(*f));
-            _rev_kmer = mask & (_rev_kmer >> 2 | char_to_num(*f, true) << (k * 2 - 2));
+            _rev_kmer = mask & (_rev_kmer >> 2 | char_to_num_complement(*f) << (k * 2 - 2));
             f++;
         }
         return {min_k, min_pos, sign};
@@ -179,11 +200,11 @@ struct KmerGenerator
 
 void count_kmers(std::string const &s, std::unordered_map<unsigned int, unsigned int> &kc, uint8_t k);
 
-std::unordered_set<unsigned int> get_high_frequency_kmers(std::unordered_map<unsigned int, unsigned int> kc, double percentile = 0.99);
+std::unique_ptr<std::unordered_set<unsigned int>> get_high_frequency_kmers(std::unordered_map<unsigned int, unsigned int> kc, double percentile = 0.99);
 
-std::shared_ptr<std::vector<Kmer>> sketch_string(std::string const &s, uint8_t w, uint8_t k, std::unordered_set<unsigned int> const &hfk);
+std::unique_ptr<std::vector<Kmer>> sketch_string(std::string const &s, uint8_t w, uint8_t k, std::unordered_set<unsigned int> const &hfk);
 
-std::shared_ptr<std::vector<std::vector<Kmer>>> sketch_contigs(ContigContainerPtr contigs, uint8_t w, uint8_t k, double percentile);
-};
+std::vector<std::vector<Kmer>> sketch_contigs(ContigContainerPtr contigs, uint8_t w, uint8_t k, double percentile, std::vector<std::vector<Kmer>>& sketches);
+}
 
 #endif

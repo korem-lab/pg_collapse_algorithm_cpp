@@ -59,50 +59,12 @@ void Util::get_last_chars(std::string& str, int num_of_chars)
     Util::remove_first_chars(str, str.size() - num_of_chars);
 }
 
-uint8_t Util::char_to_int(char c, bool complement)
+
+std::string Util::convert_to_string(bool o)
 {
-    if (!complement)
-        return char_to_num_map.at(c);
-    return complement_char_to_num_map.at(c);
+    if (o) return "True";
+    return "False";
 }
-
-/* 
-
-char Util::num_to_char(uint8_t num)
-{
-    return num_to_char_map[num];
-} 
-
-char Util::complement(char c)
-{
-    return char_complement_map.at(c);
-}*/
-
-
-std::string Util::convert_to_string(int o)
-{
-        std::stringstream ss;
-        ss << o;
-        return ss.str();
-    }
-    std::string Util::convert_to_string(bool o)
-    {
-        if (o) return "True";
-        return "False";
-    }
-    std::string Util::convert_to_string(unsigned int o)
-    {
-        std::stringstream ss;
-        ss << o;
-        return ss.str();
-    }
-    std::string Util::convert_to_string(u_int64_t o)
-    {
-        std::stringstream ss;
-        ss << o;
-        return ss.str();
-    }
-    
 
  std::chrono::system_clock::time_point Util::start_timing()
  {
