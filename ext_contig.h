@@ -19,11 +19,11 @@ class ExtContig
         std::string SampleName;
         std::string Seq;
         
-        int GetId() {return m_contig_id;}        
-        unsigned int GetFwdExt() {return m_bwd_ext_sz; }
-        unsigned int GetBwdExt() {return m_bwd_ext_sz; }  
+        int GetId() const {return m_contig_id;}        
+        unsigned int GetFwdExt() const {return m_bwd_ext_sz; }
+        unsigned int GetBwdExt() const {return m_bwd_ext_sz; }  
         unsigned int GetUnExtLen() {return m_unext_len;}
-        unsigned int GetLen() {return Seq.size();}
+        unsigned int GetLen() const {return Seq.size();}
         bool GetIsTag() {return m_is_tag;}
         ExtContig Clone()
         {

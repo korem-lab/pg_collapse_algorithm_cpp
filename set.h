@@ -30,7 +30,7 @@ SetNode<T>* findSetMerge(SetNode<T>* elem)
     }
 }
 
-/* template <class T>
+template <class T>
 void unionSetMerge(SetNode<T>* node1, SetNode<T>* node2)
 {
     SetNode<T>* root1 = findSetMerge(node1);
@@ -46,13 +46,10 @@ void unionSetMerge(SetNode<T>* node1, SetNode<T>* node2)
         root1->parent_merge = root2;
         if (root1->rank == root2->rank)
         {
-            ++(root2->rank);
+            ++root2->rank;
         }
     }
-     
 }
-*/
-
 
 template <class T>
 SetNode<T>* findSetEqvPt(SetNode<T>* elem)
@@ -68,7 +65,22 @@ SetNode<T>* findSetEqvPt(SetNode<T>* elem)
     }
 }
 
+template <class T>
+void unionSetEqvPt(SetNode<T>* node1, SetNode<T>* node2)
+{
+    SetNode<T>* root1 = findSetEqvPt(node1);
+    SetNode<T>* root2 = findSetEqvPt(node2);
+    if (root1 == root2) return;
 
+    if (root1 < root2)
+    {
+        root2->parent_ep = root1;
+    }
+    else
+    {
+        root1->parent_ep = root2;
+    }
+}
 
 template <typename T>
 std::unordered_map<SetNode<T>*, std::vector<T>>

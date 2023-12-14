@@ -1,5 +1,5 @@
 #include "minimizer.h"
-
+#include <fstream>
 
 using namespace mzr;
 
@@ -59,7 +59,7 @@ void mzr::count_kmers(const std::string &s, std::unordered_map<unsigned int, uns
     while (!kmer_gen.empty())
     {
         Kmer kmer = kmer_gen.get_kmer();
-        kc[kmer.seq]++;
+        kc[kmer.seq]++;    
     }
 }
 
@@ -121,27 +121,21 @@ std::unique_ptr<std::vector<Kmer>> mzr::sketch_string(const std::string &s, uint
 
     while (!kmer_gen.empty())
     {
-
         Kmer candidate = kmer_gen.get_kmer(); // move window forward
         window_pos++;
         // upon getting the next kmer, the current minimum kmer will be outside the window.
         // we therefore need to compute the new minimum from scratch. This may be the next kmer
         // or, it may be any of the other w-1 kmers in the window.
-        // nm: exclude most repetative kmers?
         bool lfk = hfk.find(min_k.seq) == hfk.end();
-        if (lfk)
+        if (lfk && min_k.pos < window_pos - w)
         {
-            if (min_k.pos < (window_pos - w))
-            {
-                auto temp_min_i = kmer_gen.min_kmer_in_window(w);
-                min_k = temp_min_i;                
-                sketch.emplace_back(min_k);
-            }
-            else if (candidate.seq < min_k.seq)
-            {
-                min_k = candidate;
-                sketch.emplace_back(min_k);
-            }
+            min_k = kmer_gen.min_kmer_in_window(w);;                
+            sketch.emplace_back(min_k);
+        }
+        else if (lfk && candidate.seq < min_k.seq)
+        {
+            min_k = candidate;
+            sketch.emplace_back(min_k);
         }
     }
 
@@ -178,11 +172,14 @@ std::vector<std::vector<Kmer>> mzr::sketch_contigs(ContigContainerPtr contigs, u
 
     //std::vector<std::vector<Kmer>> sketches;
     sketches.reserve(contigs->size());
+    long total_kmers = 0;
     for (const ExtContig &c : *contigs)
     {
-        sketches.push_back(*sketch_string(c.Seq, w, k, hfk));
+        auto contig_sketches = *sketch_string(c.Seq, w, k, hfk);
+        total_kmers += contig_sketches.size();
+        sketches.push_back(contig_sketches);
     }
-    logger.Debug("Sketched " + Util::convert_to_string(sketches.size()) + " kmers");
+    logger.Debug("Sketched " + Util::convert_to_string(total_kmers) + " kmers");
 
     return (sketches);
 }

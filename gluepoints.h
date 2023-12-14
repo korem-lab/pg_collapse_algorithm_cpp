@@ -78,51 +78,7 @@ struct Breakpoint
     {
         return "cid: " + std::to_string(cid) + " pos: " + std::to_string(pos) + " type: " + std::to_string(pointType) + " q_derived: " + std::to_string(q_derived);
     }
-//     bool operator==(const Breakpoint& rhs) const
-//     {
-//      return (cid == rhs.cid)
-//      && (pos == rhs.pos)
-//      && (q_derived == rhs.q_derived)
-//      && (pointType == rhs.pointType);
-//     }
-//     bool operator!=(const Breakpoint& rhs) const
-//   {
-//     return !operator==(rhs);
-//   }
-//   bool operator<(const Breakpoint& rhs) const
-//   {
-//      return (pointType < rhs.pointType || (pointType == rhs.pointType && pos < rhs.pos));
-//   }
 };
-
-// template <>
-// struct std::hash<SetNode<Breakpoint>>
-// {
-//     std::size_t operator()(const SetNode<Breakpoint> b) const
-//     {
-//         /* size_t h = (size_t(b.data.pos) << 32) + size_t(b.data.pointType) + size_t(b.data.cid) + size_t(b.data.q_derived);
-//         h *= 1231231557ull; // "random" uneven integer.
-//         h ^= (h >> 32);
-//         return h; */
-
-//         return ((std::hash<unsigned int>()(b.data.pos) ^ (std::hash<unsigned int>()(b.data.cid) << 1)) >>1) ^
-//             (std::hash<PointType>()(b.data.pointType) >> 1);
-//     }
-// };
-
-// template <>
-// struct std::hash<SetNode<Breakpoint>*>
-// {
-//     std::size_t operator()(const SetNode<Breakpoint> * b) const
-//     {
-//         return std::hash<SetNode<Breakpoint>>()(*b);
-//     }
-// }; 
-
-
-
-
-
 struct Gluepoint
 {
     uint64_t sr, sl, er, el;
@@ -216,37 +172,6 @@ auto same_cluster_s = [](Point const & a, Point const & b, uint32_t max_separati
 unsigned int abs_diff(unsigned int a, unsigned int b)
 {
     return (a > b) * (a - b) + (a <= b) * (b - a);
-}
-
-void unionSetEqvPt(SetNode<Breakpoint>* node1, SetNode<Breakpoint>* node2)
-{
-    SetNode<Breakpoint>* root1 = findSetEqvPt(node1);
-    SetNode<Breakpoint>* root2 = findSetEqvPt(node2);
-    if (root1 == root2) return;
-
-    if (root1 < root2)
-        root2->parent_ep = root1;
-    else
-        root1->parent_ep = root2;
-}
-void unionSetMerge(SetNode<Breakpoint>* node1, SetNode<Breakpoint>* node2)
-{
-    SetNode<Breakpoint>* root1 = findSetMerge(node1);
-    SetNode<Breakpoint>* root2 = findSetMerge(node2);
-    if (root1 == root2) return;
-
-    if (root1->rank > root2->rank)
-    {
-        root2->parent_merge = root1;
-    }
-    else
-    {
-        root1->parent_merge = root2;
-        if (root1->rank == root2->rank)
-        {
-            ++(root2->rank);
-        }
-    }
 }
 
 std::shared_ptr<std::unordered_map<unsigned int, std::vector<Point>>> construct_endpoints(std::vector<PyAlignment> &alignments)
@@ -346,13 +271,13 @@ void initialize(
 
     // add start and end breakpoints to gluepoints
     bool is_end = true;
-    lookup.reserve(contigs.size() * 2);
+    lookup.reserve(contigs.size());
 
-    for (auto &c : contigs)
+    for (const auto &c : contigs)
     {
         unsigned int cid = c.GetId();
         auto start = new SetNode<Breakpoint>(Breakpoint(cid, 0, PointType::START_RIGHT, true));
-        auto end = new SetNode<Breakpoint>(Breakpoint(cid, static_cast<uint32_t>(c.GetLen()), PointType::END_LEFT, true));
+        auto end = new SetNode<Breakpoint>(Breakpoint(cid, c.GetLen(), PointType::END_LEFT, true));
 
         auto &bp_on_contig = lookup[cid];
         bp_on_contig.emplace_back(start);
@@ -366,8 +291,6 @@ std::vector<Point const *> find_overlapping_alignments(Breakpoint const &bp, std
     std::vector<Point const *> overlapping_alignments;
     for (size_t i = 0; i < endpoints.size(); i += 2) {
         
-        if (endpoints[i].q_cid == 57914 || endpoints[i].q_cid == 57916)
-            bool stop = true;
         if (
             (abs(endpoints[i + 1].q_pos, bp.pos) > max_separation) &&
             (abs(bp.pos, endpoints[i].q_pos) > max_separation) &&
@@ -619,8 +542,7 @@ void process_overlap(
     bool is_fwd = is_fc(a->alignment);
     uint32_t s_pos = get_split_position(inducing_point->data.pos, a->alignment);
     uint32_t s_cid = static_cast<uint32_t>(a->alignment.s_cid);
-    if (s_cid == 57916 || s_cid == 57914)
-        bool stop = true;
+    
     // compute merge and equivalence point under split logic
     if (is_fwd) {
         auto qsr = new SetNode<Breakpoint>(Breakpoint(inducing_point->data.cid, inducing_point->data.pos, PointType::START_RIGHT, true));
@@ -783,27 +705,17 @@ void add_consensus_gluepoint(std::vector<SetNode<Breakpoint> *>::const_iterator 
         for (size_t i = 1; i < repeats; i++)
         {
             unsigned int pos = (*left_arr)->data.pos + i * mode;
-            if (cid == 84386 || cid == 57914 || cid == 57916)    
-            {
-                std::cout << "cid: " << cid << " l_ar:" << pos << "\n";
-            }
             consensus_gps.emplace_back(gp_id, cid, pos);
         }
         consensus_gps.emplace_back(gp_id, cid, (*(right_arr - 1))->data.pos);
-        if (cid == 84386 || cid == 57914 || cid == 57916)    
-        {
-            std::cout << "cid: " << cid << " r_ar:" << (*(right_arr - 1))->data.pos << "\n";
-        }
+        
     }
     else
     {
         unsigned int consensus_pos = median(left_arr, right_arr, [](std::vector<SetNode<Breakpoint> *>::const_iterator const &a) -> unsigned int
                                             { return (*a)->data.pos; });
         consensus_gps.emplace_back(gp_id, cid, consensus_pos);
-        if (cid == 84386 || cid == 57914 || cid == 57916)    
-        {
-            std::cout << "cid: " << cid << " c_p:" << consensus_pos << "\n";
-        }
+        
     }
 }
 
@@ -811,7 +723,6 @@ void merge_s_only_clusters(std::unordered_map<uint32_t, std::vector<Point>> &end
                            std::unordered_map<uint32_t, std::vector<SetNode<Breakpoint> *>> &lookup,
                            std::unordered_set<SetNode<Breakpoint> *> &equivalent_points, uint32_t max_separation)
 {
-
     // set q-derived variable across all points
     for (auto [cid, bps] : lookup) {
         auto left = bps.begin();
@@ -827,9 +738,10 @@ void merge_s_only_clusters(std::unordered_map<uint32_t, std::vector<Point>> &end
             // set all of them to be q-derived
             if (!q_derived) {
                 auto overlapping_alignments = find_overlapping_alignments((*left)->data, endpoints[cid], max_separation);
-                for (auto a : overlapping_alignments) {
+                for (auto& a : overlapping_alignments) {
                     process_overlap(*left, a, equivalent_points, lookup, max_separation);
                 }
+                
             }
             left = right;
         }
@@ -1081,17 +993,8 @@ void minimize_equivalent_points(std::vector<Gluepoint> &gps,
                                 std::unordered_map<SetNode<Breakpoint> *, uint64_t> &set_to_id,
                                 std::unordered_map<uint64_t, SetNode<Breakpoint> *> &id_to_set)
 {
-    // std::ofstream output_file("/home/nat/Documents/GitHub/data/output/gl_min_gp_before1.txt", std::ios::out);
-
-    // for (auto g : gps)
-    //     output_file << g.ToString() << "\n";  
-
-
-
     for (auto it = gps.begin(); it < gps.end(); it++)
     {
-        if (it->cid == 57914 || it->cid == 57916)
-            bool stop = true;
         auto set_sr = id_to_set[it->sr];
         auto set_sl = id_to_set[it->sl];
         auto set_er = id_to_set[it->er];
@@ -1130,10 +1033,7 @@ std::vector<SequenceInterval> build_sequence_intervals(std::vector<Gluepoint> co
         if (it->cid != (it - 1)->cid)
         {
             continue;
-        }
-        if (it->cid == 84386 || it->cid == 57914 || it->cid == 57916)    
-            bool stop = false;
-        
+        }        
         seq_ivls.emplace_back((it - 1)->sr, (it)->el, (it - 1)->er, it->sl, it->cid, (it - 1)->pos, it->pos);
     }
     return seq_ivls;

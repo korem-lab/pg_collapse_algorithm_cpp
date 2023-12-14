@@ -219,12 +219,12 @@ std::unique_ptr<std::vector<Alignment>> chain_and_backtrack(std::vector<Contig>&
                 coord_it++;
                 continue;
             }
-            if (asymmentric && (contig.cid > coord_it->s_cid))
+            if (asymmentric && (contig.cid > coord_it->s_cid)) // NM: why skip cid > s_cid?
             {
                 coord_it++;
                 continue;
             }
-            Anchor anchor;            
+            Anchor anchor;             
             anchor.q_pos = flip_sketch_it->pos;
             anchor.s_pos = coord_it->s_pos;
             anchor.s_cid = coord_it->s_cid;
@@ -294,7 +294,7 @@ std::unique_ptr<std::vector<Alignment>> chain_and_backtrack(std::vector<Contig>&
         std::vector<double> score_table(s_anchors.size(), 0.0);
         std::vector<int64_t> backtrack_table(s_anchors.size(), -1);
 
-        for(int i = 1; i < s_anchors.size(); i++)
+        for(int i = 1; i < s_anchors.size(); i++)   
         {
             max_score = 0;
             max_id = 0;

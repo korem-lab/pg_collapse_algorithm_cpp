@@ -143,18 +143,18 @@ struct KmerGenerator
        
         while (f <= seq_it)
         {
-            if (_rev_kmer < min_k)
-            {
-                min_k = _rev_kmer;
-                min_pos = f - seq.begin() - k;
-                sign = NEGATIVE;
-            }
-            else if (_kmer < min_k)
+            if (_kmer < min_k)
             {
                 min_k = _kmer;
                 min_pos = f - seq.begin() - k;
                 sign = POSITIVE;
             }
+            if (_rev_kmer < min_k)
+            {
+                min_k = _rev_kmer;
+                min_pos = f - seq.begin() - k;
+                sign = NEGATIVE;
+            }            
             
             _kmer = mask & (_kmer << 2 | char_to_num(*f));
             _rev_kmer = mask & (_rev_kmer >> 2 | char_to_num_complement(*f) << (k * 2 - 2));

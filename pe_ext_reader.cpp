@@ -54,7 +54,9 @@ void PeExtReader::ParseFile(std::string& fasta_file_path, ContigContainer& out_c
                     econtig.Seq.append(line);
                 }                
                 
-                auto unext_len = econtig.Seq.size() - econtig.m_bwd_ext_sz - econtig.m_fwd_ext_sz;       
+                auto unext_len = econtig.Seq.size() - econtig.m_bwd_ext_sz - econtig.m_fwd_ext_sz;   
+                if (econtig.Name == "k141_5260")    
+                    bool stop = true;
                 if (remove_duplicates && unique_contigs.find(econtig.Name) != unique_contigs.end() && 
                     unext_len >= length_threshold)
                 {

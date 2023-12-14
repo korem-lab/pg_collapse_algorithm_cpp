@@ -528,8 +528,7 @@ public:
         bool is_tag = extended_contig.GetIsTag();
         std::string seq = extended_contig.Seq.substr(start, end-start);
         std::string s_start, s_end;
-        if(nid == "97" && extended_contig.Name == "k141_48549")
-            bool stop = true;
+       
         if (end < start_of_contig)
         {
             s_start = "0-" + Util::convert_to_string<unsigned int>(abs(start - start_of_contig));
