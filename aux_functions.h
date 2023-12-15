@@ -6,9 +6,9 @@
 #include <sstream>
 #include <vector>
 #include <unordered_map>
-#include <boost/algorithm/string.hpp>
 #include <codecvt>
 #include <chrono>
+#include <algorithm>
 
 typedef std::unique_ptr<std::vector<std::string>> StrListPtr;
 typedef std::unique_ptr<std::string> stringptr;
@@ -32,7 +32,25 @@ namespace Util
     }  
     std::string convert_to_string(bool o);
 
-    void trim_str(std::string& str);
+        // trim from start (in place)
+    inline void ltrim(std::string &s) {
+        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+            return !std::isspace(ch);
+        }));
+    }
+
+    // trim from end (in place)
+    inline void rtrim(std::string &s) {
+        s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+            return !std::isspace(ch);
+        }).base(), s.end());
+    }
+
+    inline void trim_str(std::string& str)
+    {
+        rtrim(str);
+        ltrim(str);
+    }
     void remove_first_chars(std::string& str, int num_of_chars);
     void remove_last_chars(std::string& str, int num_of_chars);
     void get_first_chars(std::string& str, int num_of_chars);

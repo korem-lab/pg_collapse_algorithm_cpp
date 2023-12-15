@@ -9,7 +9,7 @@ StrListPtr Util::split(const std::string& str, char delim)
     while (!ss.eof()) 
     {
         std::getline(ss, word, delim);
-        boost::trim(word);
+        Util::trim_str(word);
         word_list.push_back(word);
     }   
     return std::make_unique<std::vector<std::string>>(word_list);
@@ -29,11 +29,6 @@ bool Util::convert_to_bool(const std::string& str)
     bool b;
     ss  >> std::boolalpha >> b;
     return b;
-}
-
-void Util::trim_str(std::string& str)
-{
-    boost::trim(str);
 }
 
 void Util::remove_first_chars(std::string& str, int num_of_chars)
