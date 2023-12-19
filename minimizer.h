@@ -37,6 +37,9 @@ const char int_to_char_map[] = {'A','C','G','T'};
 
 
 
+std::string unpack_kmer(unsigned int packed_kmer, unsigned int kmer_len);
+
+
 /* inline char num_to_char(uint8_t b)
 {
     if (b < 4)
@@ -63,7 +66,6 @@ struct Kmer
         return unpack_kmer(seq, k);
     }    
 };
-
 
 struct KmerGenerator
 {
@@ -196,7 +198,6 @@ std::unique_ptr<std::vector<Kmer>> sketch_string(std::string const &s, uint8_t w
 
 std::vector<std::vector<Kmer>> sketch_contigs(ContigContainerPtr contigs, uint8_t w, uint8_t k, double percentile, std::vector<std::vector<Kmer>>& sketches);
 
-std::string unpack_kmer(unsigned int packed_kmer, unsigned int kmer_len);
 }
 
 #endif

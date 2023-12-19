@@ -23,12 +23,12 @@ std::vector<std::string> GetSampleList(std::string& sample_list_file_path)
     sample_list_file.close();
     return sample_list;
 }
-unsigned int PeExtReader::Parse(ContigContainerPtr out_contigContainer, IdMapPtr out_idmap)
+int PeExtReader::Parse(ContigContainerPtr out_contigContainer, IdMapPtr out_idmap)
 {
     auto fasta_input_file = config.GetValue<std::string>("sample_list");
     return Parse(fasta_input_file, out_contigContainer, out_idmap);
 }
-unsigned int PeExtReader::Parse(std::string& fasta_file_path, ContigContainerPtr out_contigContainer, IdMapPtr out_idmap)
+int PeExtReader::Parse(std::string& fasta_file_path, ContigContainerPtr out_contigContainer, IdMapPtr out_idmap)
 {
     if (Util::get_file_ext(fasta_file_path) != "fasta")
     {
@@ -43,11 +43,15 @@ unsigned int PeExtReader::Parse(std::string& fasta_file_path, ContigContainerPtr
             SaveContigContainer(*out_contigContainer);    
             return 1;
         }
-        return 0;
+        else
+        {
+            logger.Error("File '" + fasta_file_path + "' is not found");
+            return -1;
+        }
     }
 }
 
-unsigned int PeExtReader::Parse(std::vector<std::string>& fasta_path_list, ContigContainerPtr out_contigContainer, IdMapPtr out_idmap)
+int PeExtReader::Parse(std::vector<std::string>& fasta_path_list, ContigContainerPtr out_contigContainer, IdMapPtr out_idmap)
 {
     unsigned int fasta_file_num = 0;
     for(auto fasta_file_path : fasta_path_list)
@@ -69,15 +73,15 @@ void PeExtReader::ParseFile(std::string& fasta_file_path, ContigContainer& out_c
     auto flank_size = config.GetValue<int>("flank_size");
     auto min_adj_overlap = min_overlap - epsilon;
 
-    std::ifstream configFile(fasta_file_path);
+    std::ifstream contig_file(fasta_file_path);
     std::unordered_set<std::string> unique_contigs;
     
-    if(configFile.is_open())
+    if(contig_file.is_open())
     {
         std::string line;
-        while(configFile)
+        while(contig_file)
         {
-            std::getline(configFile, line);
+            std::getline(contig_file, line);
             Util::trim_str(line);
             if (line.size() > 0 && line[0] == '>')
             {
@@ -87,9 +91,9 @@ void PeExtReader::ParseFile(std::string& fasta_file_path, ContigContainer& out_c
 
                 (*out_idmap)[econtig.m_contig_id] = econtig.m_sample_id;
                 
-                while(configFile.peek() != '>' && !configFile.eof())                                      
+                while(contig_file.peek() != '>' && !contig_file.eof())                                      
                 {
-                    std::getline(configFile, line);
+                    std::getline(contig_file, line);
                     Util::trim_str(line);
                     econtig.Seq.append(line);
                 }                
@@ -139,7 +143,7 @@ void PeExtReader::ParseFile(std::string& fasta_file_path, ContigContainer& out_c
     {
         logger.Error("File " + fasta_file_path + " does not exist.");
     }
-    configFile.close();
+    contig_file.close();
 }
 /* std::string ExtContig::ToString()
 {

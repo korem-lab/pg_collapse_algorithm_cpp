@@ -53,7 +53,7 @@ char mzr::num_to_char(uint8_t b)
     }
 }
     
-std::string unpack_kmer(unsigned int packed_kmer, unsigned int kmer_len)
+std::string mzr::unpack_kmer(unsigned int packed_kmer, unsigned int kmer_len)
 {
     unsigned int mask = 0x00000003;
     int8_t shift = kmer_len * 2 - 2;
@@ -107,8 +107,7 @@ std::unique_ptr<std::unordered_set<unsigned int>> mzr::get_high_frequency_kmers(
     return std::make_unique<std::unordered_set<unsigned int>>(high_freq_kmers);
 }
 
-std::unique_ptr<std::vector<Kmer>> mzr::sketch_string(const std::string &s, uint8_t w, uint8_t k, 
-    const std::unordered_set<unsigned int>  &hfk)
+std::unique_ptr<std::vector<Kmer>> mzr::sketch_string(std::string const &s, uint8_t w, uint8_t k, std::unordered_set<unsigned int> const &hfk)
 {
     // setup
     std::vector<Kmer> sketch;

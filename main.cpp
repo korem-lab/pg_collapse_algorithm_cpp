@@ -25,15 +25,17 @@ int main(int argc, char *argv[])
     // Reads fasta file and populates contig container and idmap
     auto num_samples = per.Parse(ccptr, imptr);
     
-    auto alignments = compute_alignments(ccptr);   
+    if (num_samples > 0)
+    {
+        std::vector<PyAlignment> alignments = compute_alignments(ccptr);   
+        GluepointMapPtr gmp = nullptr;    
+        std::vector<SequenceInterval> node_intervals = cpp_gen_gp(alignments, ccptr);
 
-    GluepointMapPtr gmp = nullptr;
-    auto node_intervals = cpp_gen_gp(alignments, ccptr);
-
-    auto copan = CoPanGraph(node_intervals, ccptr, imptr, num_samples);
-    copan.build_graph();        
-    copan.output_graph();
-
+        CoPanGraph copan = CoPanGraph(node_intervals, ccptr, imptr, num_samples);
+        copan.build_graph();        
+        copan.output_graph();
+    }
     Util::Close();
+    return 0;
 }   
    

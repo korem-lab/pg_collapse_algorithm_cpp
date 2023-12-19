@@ -18,9 +18,9 @@ typedef std::shared_ptr<IdMap> IdMapPtr;
 class PeExtReader
 {
     public:
-        unsigned int Parse(ContigContainerPtr out_contigContainer, IdMapPtr out_idmap);
-        unsigned int Parse(std::string& fasta_file_path, ContigContainerPtr out_contigContainer, IdMapPtr out_idmap);
-        unsigned int Parse(std::vector<std::string>& fasta_path_list, ContigContainerPtr out_contigContainer, IdMapPtr out_idmap);
+        int Parse(ContigContainerPtr out_contigContainer, IdMapPtr out_idmap);
+        int Parse(std::string& fasta_file_path, ContigContainerPtr out_contigContainer, IdMapPtr out_idmap);
+        int Parse(std::vector<std::string>& fasta_path_list, ContigContainerPtr out_contigContainer, IdMapPtr out_idmap);
     private:
         void ParseFile(std::string& fasta_file_path, ContigContainer& out_contigContainer, IdMapPtr out_idmap, int fasta_file_num);
         void SaveContigContainer(ContigContainer& ccon);
