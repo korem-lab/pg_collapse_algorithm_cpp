@@ -5,14 +5,13 @@
             "label": "C/C++: g++ build active file",
             "command": "/usr/bin/g++",
             "args": [
-                "-DBOOST_LOG_DYN_LINK",
                 "-fdiagnostics-color=always",
                 "-g",
                 "*.cpp",
                 "-pthread",
                 "-fopenmp",
                 "-o",
-                "${fileDirname}/${fileBasenameNoExtension}.exe",
+                "${fileDirname}/copangraph.exe",
                 "--verbose",
                 "-O0"
             ],
