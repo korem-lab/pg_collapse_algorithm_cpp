@@ -59,17 +59,8 @@ struct Kmer
     Kmer() : seq(0), pos(0), sign(POSITIVE){};
 
     std::string as_string(int8_t k) const
-    {
-        unsigned int mask = 0x00000003;
-        int8_t shift = k * 2 - 2;
-        std::string kmer;
-        while (shift >= 0)
-        {
-            unsigned int base = mask & (seq >> shift);
-            kmer = kmer + num_to_char(base);
-            shift -= 2;
-        }
-        return (kmer);
+    {        
+        return unpack_kmer(seq, k);
     }    
 };
 
@@ -143,7 +134,6 @@ struct KmerGenerator
        
         while (f <= seq_it)
         {
-            if (_kmer < min_k)
             {
                 min_k = _kmer;
                 min_pos = f - seq.begin() - k;
@@ -205,6 +195,8 @@ std::unique_ptr<std::unordered_set<unsigned int>> get_high_frequency_kmers(std::
 std::unique_ptr<std::vector<Kmer>> sketch_string(std::string const &s, uint8_t w, uint8_t k, std::unordered_set<unsigned int> const &hfk);
 
 std::vector<std::vector<Kmer>> sketch_contigs(ContigContainerPtr contigs, uint8_t w, uint8_t k, double percentile, std::vector<std::vector<Kmer>>& sketches);
+
+std::string unpack_kmer(unsigned int packed_kmer, unsigned int kmer_len);
 }
 
 #endif

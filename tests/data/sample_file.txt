@@ -1,0 +1,1 @@
+tests/data/sample_5_megahit_20M.pe_ext_all.fasta

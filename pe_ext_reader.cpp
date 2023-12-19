@@ -1,10 +1,50 @@
 #include "pe_ext_reader.h"
 
+
+std::vector<std::string> GetSampleList(std::string& sample_list_file_path)
+{
+    std::ifstream sample_list_file(sample_list_file_path);
+    std::vector<std::string> sample_list;
+    std::string str{};
+    logger.Info("Retrieving a sample list from " + sample_list_file_path);
+    if (sample_list_file.is_open())
+    {
+        while(std::getline(sample_list_file, str))
+        {
+            if (Util::file_exists(str))
+            {
+                sample_list.push_back(str);
+                logger.Info("  * sample file: " + str);
+            }
+            else
+                logger.Error("  File " + str + " does not exist.");
+        }
+    }
+    sample_list_file.close();
+    return sample_list;
+}
+unsigned int PeExtReader::Parse(ContigContainerPtr out_contigContainer, IdMapPtr out_idmap)
+{
+    auto fasta_input_file = config.GetValue<std::string>("sample_list");
+    return Parse(fasta_input_file, out_contigContainer, out_idmap);
+}
 unsigned int PeExtReader::Parse(std::string& fasta_file_path, ContigContainerPtr out_contigContainer, IdMapPtr out_idmap)
 {
-    ParseFile(fasta_file_path, *out_contigContainer, out_idmap, 0);   
-    SaveContigContainer(*out_contigContainer);
-    return 1;
+    if (Util::get_file_ext(fasta_file_path) != "fasta")
+    {
+        auto sample_list = GetSampleList(fasta_file_path);
+        return Parse(sample_list, out_contigContainer, out_idmap);
+    }
+    else
+    {
+        if (Util::file_exists(fasta_file_path))
+        {
+            ParseFile(fasta_file_path, *out_contigContainer, out_idmap, 0);   
+            SaveContigContainer(*out_contigContainer);    
+            return 1;
+        }
+        return 0;
+    }
 }
 
 unsigned int PeExtReader::Parse(std::vector<std::string>& fasta_path_list, ContigContainerPtr out_contigContainer, IdMapPtr out_idmap)
@@ -15,7 +55,7 @@ unsigned int PeExtReader::Parse(std::vector<std::string>& fasta_path_list, Conti
         ParseFile(fasta_file_path, *out_contigContainer, out_idmap, fasta_file_num++);
     }
     SaveContigContainer(*out_contigContainer);
-    return fasta_file_num - 1;
+    return fasta_file_num;
 }
 
 void PeExtReader::ParseFile(std::string& fasta_file_path, ContigContainer& out_contigContainer, IdMapPtr out_idmap, int fasta_file_num)
@@ -55,14 +95,12 @@ void PeExtReader::ParseFile(std::string& fasta_file_path, ContigContainer& out_c
                 }                
                 
                 auto unext_len = econtig.Seq.size() - econtig.m_bwd_ext_sz - econtig.m_fwd_ext_sz;   
-                if (econtig.Name == "k141_5260")    
-                    bool stop = true;
                 if (remove_duplicates && unique_contigs.find(econtig.Name) != unique_contigs.end() && 
                     unext_len >= length_threshold)
                 {
                     if (econtig.m_bwd_ext_sz >= min_adj_overlap)
                     {
-                        econtig.Hdr = econtig.SampleName + ":" + econtig.Name + ":" + Util::convert_to_string(econtig.m_bwd_ext_sz) + ":0";
+                        econtig.Hdr = econtig.SampleName + ":" + econtig.Name + ":" + Util::to_str(econtig.m_bwd_ext_sz) + ":0";
                         Util::get_first_chars(econtig.Seq, flank_size + econtig.m_bwd_ext_sz);
                         econtig.m_is_tag = true;
                         econtig.m_unext_len = econtig.Seq.size() - econtig.m_bwd_ext_sz - econtig.m_fwd_ext_sz;                              
@@ -70,7 +108,7 @@ void PeExtReader::ParseFile(std::string& fasta_file_path, ContigContainer& out_c
                     }
                     if(econtig.m_fwd_ext_sz >= min_adj_overlap)
                     {
-                        econtig.Hdr = econtig.SampleName + ":" + econtig.Name + ":0:" + Util::convert_to_string(econtig.m_fwd_ext_sz);
+                        econtig.Hdr = econtig.SampleName + ":" + econtig.Name + ":0:" + Util::to_str(econtig.m_fwd_ext_sz);
                         Util::get_last_chars(econtig.Seq, flank_size + econtig.m_fwd_ext_sz);
                         econtig.m_unext_len = econtig.Seq.size() - econtig.m_bwd_ext_sz - econtig.m_fwd_ext_sz;       
                         econtig.m_is_tag = true;
@@ -95,7 +133,11 @@ void PeExtReader::ParseFile(std::string& fasta_file_path, ContigContainer& out_c
                 }                        
             }
         }
-        logger.Debug("Contigs size: " + Util::convert_to_string(out_contigContainer.size()));
+        logger.Debug("Contigs size: " + Util::to_str(out_contigContainer.size()));
+    }
+    else
+    {
+        logger.Error("File " + fasta_file_path + " does not exist.");
     }
     configFile.close();
 }
@@ -106,9 +148,9 @@ void PeExtReader::ParseFile(std::string& fasta_file_path, ContigContainer& out_c
 
 stringptr ExtContig::GetHeader()
 {
-    return std::make_unique<std::string>(">" + Util::convert_to_string<int>(-1) + ":" + SampleName + ":" + 
-        Util::convert_to_string<int>(-1) + ":" + Name + ":" + Util::convert_to_string<unsigned int>(m_bwd_ext_sz) + ":" +
-        Util::convert_to_string<unsigned int>(m_fwd_ext_sz) + ":" + Util::convert_to_string(m_is_tag));
+    return std::make_unique<std::string>(">" + Util::to_str<int>(-1) + ":" + SampleName + ":" + 
+        Util::to_str<int>(-1) + ":" + Name + ":" + Util::to_str<unsigned int>(m_bwd_ext_sz) + ":" +
+        Util::to_str<unsigned int>(m_fwd_ext_sz) + ":" + Util::to_str(m_is_tag));
 } */
 void PeExtReader::SaveContigContainer(ContigContainer& ccon)
 {
@@ -119,9 +161,9 @@ void PeExtReader::SaveContigContainer(ContigContainer& ccon)
     std::ofstream processed_input_fasta_file(processed_input_fasta_path);
     for(auto& econtig : ccon)
     {
-        processed_input_fasta_file << ">" + Util::convert_to_string<int>(-1) + ":" + econtig.SampleName + ":" + 
-        Util::convert_to_string<int>(-1) + ":" + econtig.Name + ":" + Util::convert_to_string<unsigned int>(econtig.m_bwd_ext_sz) + ":" +
-        Util::convert_to_string<unsigned int>(econtig.m_fwd_ext_sz) + ":" + Util::convert_to_string(econtig.m_is_tag) + "\n";
+        processed_input_fasta_file << ">" + Util::to_str<int>(-1) + ":" + econtig.SampleName + ":" + 
+        Util::to_str<int>(-1) + ":" + econtig.Name + ":" + Util::to_str<unsigned int>(econtig.m_bwd_ext_sz) + ":" +
+        Util::to_str<unsigned int>(econtig.m_fwd_ext_sz) + ":" + Util::to_str(econtig.m_is_tag) + "\n";
         unsigned int i = 0;
         const unsigned int fold = 80;
         

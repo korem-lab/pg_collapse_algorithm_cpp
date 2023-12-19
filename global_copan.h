@@ -7,4 +7,11 @@
 extern Util::ConfigReader config;
 extern Util::AsyncLogger logger;
 
+namespace Util
+{
+    void InitializeServices(const char* config_name);
+    const char* ParseConfigName(int argc, char *argv[]);
+    void Close();
+};
+
 #endif

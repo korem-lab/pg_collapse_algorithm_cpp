@@ -86,10 +86,10 @@ public:
     std::string end;
     char ori;
     bool is_tag = false;
-    std::string ToString() override { return "\tINFO:" + nid + ":" + full_name + ":" + Util::convert_to_string<int>(sid) + ":" + contig_name + 
-        ":" + start + ":" + end + ":" + ori + ":" + Util::convert_to_string(is_tag); }
-    std::string ToToken() override { return nid + ":" + Util::convert_to_string<int>(sid) + ":" + contig_name + ":" + 
-        start + ":" + end + ":" + ori + ":" +  Util::convert_to_string(is_tag); }
+    std::string ToString() override { return "\tINFO:" + nid + ":" + full_name + ":" + Util::to_str<int>(sid) + ":" + contig_name + 
+        ":" + start + ":" + end + ":" + ori + ":" + Util::to_str(is_tag); }
+    std::string ToToken() override { return nid + ":" + Util::to_str<int>(sid) + ":" + contig_name + ":" + 
+        start + ":" + end + ":" + ori + ":" +  Util::to_str(is_tag); }
 };
 class GFASegment : public Element
 {
@@ -105,7 +105,7 @@ public:
     //   f'{nid}:{sid}:{cid}:{lp}:{rp}:{ori}'
     std::string ToToken() override
     {
-        return m_rest.nid + ":" + Util::convert_to_string<int>(m_rest.sid) + ":" + m_rest.contig_name + ":" + (m_rest.start) + ":" +
+        return m_rest.nid + ":" + Util::to_str<int>(m_rest.sid) + ":" + m_rest.contig_name + ":" + (m_rest.start) + ":" +
                (m_rest.end) + ":" + m_rest.ori;
     }
     std::string GetLine()
@@ -133,15 +133,15 @@ public:
 
     std::string ToString() override
     {
-        auto hdr = ">" + m_nid + ":" + m_full_name + ":" + Util::convert_to_string<unsigned int>(m_sid) + ":" + Util::convert_to_string<unsigned int>(m_cid) +
-                   ":" + m_contig_name + ":" + Util::convert_to_string<unsigned int>(m_lp) + ":" + Util::convert_to_string<unsigned int>(m_rp) + ":" + m_ori + ":" + Util::convert_to_string(m_is_tag);
+        auto hdr = ">" + m_nid + ":" + m_full_name + ":" + Util::to_str<unsigned int>(m_sid) + ":" + Util::to_str<unsigned int>(m_cid) +
+                   ":" + m_contig_name + ":" + Util::to_str<unsigned int>(m_lp) + ":" + Util::to_str<unsigned int>(m_rp) + ":" + m_ori + ":" + Util::to_str(m_is_tag);
         hdr += "\n" + m_seq;
         return hdr;
     }
     std::string ToToken() override
     {
-        return m_nid + ":" + Util::convert_to_string<unsigned int>(m_sid) + ":" + Util::convert_to_string<unsigned int>(m_cid) +
-               Util::convert_to_string<unsigned int>(m_lp) + ":" + Util::convert_to_string<unsigned int>(m_rp) + ":" + m_ori;
+        return m_nid + ":" + Util::to_str<unsigned int>(m_sid) + ":" + Util::to_str<unsigned int>(m_cid) +
+               Util::to_str<unsigned int>(m_lp) + ":" + Util::to_str<unsigned int>(m_rp) + ":" + m_ori;
     }
 
 private:
@@ -165,7 +165,7 @@ public:
     Node(int i, unsigned int alpha, unsigned int beta, unsigned int gamma, unsigned int delta) : uid{++uid_counter}, intervals{i}, init_alpha{alpha}, init_beta{beta}, init_gamma{gamma}, init_delta{delta}
     {
         oris[i] = '+';
-        name = Util::convert_to_string<int>(uid);
+        name = Util::to_str<int>(uid);
         auto key1 = get_key(init_alpha, init_beta);
         auto key2 = get_key(init_gamma, init_delta);
         common_numerals.insert(key1);
@@ -190,9 +190,9 @@ public:
         for (auto p : common_numerals)
         {
             fullName.append("(");
-            fullName.append(Util::convert_to_string<unsigned int>(p.first));
+            fullName.append(Util::to_str<unsigned int>(p.first));
             fullName.append(",");
-            fullName.append(Util::convert_to_string<unsigned int>(p.second));
+            fullName.append(Util::to_str<unsigned int>(p.second));
             fullName.append(")");
             fullName.append(",");
         }
@@ -218,8 +218,8 @@ public:
     }
     std::string ToString()
     {
-        return "Node(a=" + Util::convert_to_string(init_alpha) + ",b=" + Util::convert_to_string(init_beta) +
-               ",g=" + Util::convert_to_string(init_gamma) + ",d=" + Util::convert_to_string(init_delta) + ", name=" +
+        return "Node(a=" + Util::to_str(init_alpha) + ",b=" + Util::to_str(init_beta) +
+               ",g=" + Util::to_str(init_gamma) + ",d=" + Util::to_str(init_delta) + ", name=" +
                GetName() + ",ivl=" + Util::convert_to_csv(intervals) + ",oris=" + Util::convert_to_csv(oris) + ")";
     }
 
@@ -356,16 +356,26 @@ public:
         }
         int_file1.close();
 
-        logger.Debug("Node_lookup size: " + Util::convert_to_string<unsigned long>(node_lookup.size()));
-        logger.Debug("ivl_to_node size: " + Util::convert_to_string<unsigned long>(ivl_to_node.size()));
+        logger.Debug("Node_lookup size: " + Util::to_str<unsigned long>(node_lookup.size()));
+        logger.Debug("ivl_to_node size: " + Util::to_str<unsigned long>(ivl_to_node.size()));
     }
 
-    void output_graph(const std::string &gfa_name, const std::string &fasta_name, const std::string &node_table_name, const std::string &edge_table_name)
+    void output_graph()
     {
-        write_node_table(node_table_name);
-        write_edge_table(edge_table_name);
-        write_gfa(gfa_name);
-        write_fasta(fasta_name);
+        auto rg_pref = config.GetValue<std::string>("graph_pref");
+        auto output_dir = config.GetValue<std::string>("output_dir");
+        auto file_name = output_dir + "/" + rg_pref;
+        auto gfa_file = file_name+ config.GetValue<std::string>("gfa_file_ext");
+        auto fasta_file = file_name + config.GetValue<std::string>("fasta_file_ext");
+        auto node_table_file = file_name + config.GetValue<std::string>("node_color_file_ext");
+        auto edge_table_file = file_name + config.GetValue<std::string>("edge_color_file_ext");
+
+        logger.Info("writing to files"); 
+        
+        write_node_table(node_table_file);
+        write_edge_table(edge_table_file);
+        write_gfa(gfa_file);
+        write_fasta(fasta_file);
     }
 
     void write_node_table(const std::string &node_table_name)
@@ -531,42 +541,42 @@ public:
        
         if (end < start_of_contig)
         {
-            s_start = "0-" + Util::convert_to_string<unsigned int>(abs(start - start_of_contig));
-            s_end = "0-" + Util::convert_to_string<unsigned int>(abs(end - start_of_contig));
+            s_start = "0-" + Util::to_str<unsigned int>(abs(start - start_of_contig));
+            s_end = "0-" + Util::to_str<unsigned int>(abs(end - start_of_contig));
             is_tag = true;
         }
         else if (start < start_of_contig && start_of_contig <= end && end < end_of_contig)
         {
-            s_start = "0-" + Util::convert_to_string<unsigned int>(abs(start - start_of_contig));
-            s_end = Util::convert_to_string<unsigned int>(end - start_of_contig);
+            s_start = "0-" + Util::to_str<unsigned int>(abs(start - start_of_contig));
+            s_end = Util::to_str<unsigned int>(end - start_of_contig);
             is_tag = true;
         }
         else if (start_of_contig <= start && start < end_of_contig &&
                  start_of_contig <= end && end < end_of_contig)
         {
-            s_start = Util::convert_to_string<unsigned int>(start - start_of_contig);
-            s_end = Util::convert_to_string<unsigned int>(end - start_of_contig);
+            s_start = Util::to_str<unsigned int>(start - start_of_contig);
+            s_end = Util::to_str<unsigned int>(end - start_of_contig);
         }
         else if (start_of_contig <= start && start < end_of_contig && end >= end_of_contig)
         {
-            s_start = Util::convert_to_string<unsigned int>(start - start_of_contig);
-            s_end = Util::convert_to_string<unsigned int>(extended_contig.GetUnExtLen()) + "+" +
-                    Util::convert_to_string<unsigned int>(end - end_of_contig);
+            s_start = Util::to_str<unsigned int>(start - start_of_contig);
+            s_end = Util::to_str<unsigned int>(extended_contig.GetUnExtLen()) + "+" +
+                    Util::to_str<unsigned int>(end - end_of_contig);
             is_tag = true;
         }
         else if (start >= end_of_contig)
         {
-            s_start = Util::convert_to_string<unsigned int>(extended_contig.GetUnExtLen()) + "+" +
-                      Util::convert_to_string<unsigned int>(start - end_of_contig);
-            s_end = Util::convert_to_string<unsigned int>(extended_contig.GetUnExtLen()) + "+" +
-                    Util::convert_to_string<unsigned int>(end - end_of_contig);
+            s_start = Util::to_str<unsigned int>(extended_contig.GetUnExtLen()) + "+" +
+                      Util::to_str<unsigned int>(start - end_of_contig);
+            s_end = Util::to_str<unsigned int>(extended_contig.GetUnExtLen()) + "+" +
+                    Util::to_str<unsigned int>(end - end_of_contig);
             is_tag = true;
         }
         else if (start < start_of_contig && end >= end_of_contig)
         {
-            s_start = "0-" + Util::convert_to_string<unsigned int>(start - start_of_contig);
-            s_end = Util::convert_to_string<unsigned int>(extended_contig.GetUnExtLen()) +
-                    "+" + Util::convert_to_string<unsigned int>(end - end_of_contig);
+            s_start = "0-" + Util::to_str<unsigned int>(start - start_of_contig);
+            s_end = Util::to_str<unsigned int>(extended_contig.GetUnExtLen()) +
+                    "+" + Util::to_str<unsigned int>(end - end_of_contig);
             is_tag = true;
         }
         else

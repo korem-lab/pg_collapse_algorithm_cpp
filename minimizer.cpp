@@ -52,6 +52,21 @@ char mzr::num_to_char(uint8_t b)
         return 'N';
     }
 }
+    
+std::string unpack_kmer(unsigned int packed_kmer, unsigned int kmer_len)
+{
+    unsigned int mask = 0x00000003;
+    int8_t shift = kmer_len * 2 - 2;
+    std::string kmer;
+    while (shift >= 0)
+    {
+        unsigned int base = mask & (packed_kmer >> shift);
+        kmer = kmer + mzr::num_to_char(base);
+        shift -= 2;
+    }
+    return (kmer);
+       
+}
 
 void mzr::count_kmers(const std::string &s, std::unordered_map<unsigned int, unsigned int> &kc, uint8_t k)
 {
@@ -161,12 +176,12 @@ std::vector<std::vector<Kmer>> mzr::sketch_contigs(ContigContainerPtr contigs, u
         count_kmers(c.Seq, kc, k);
     }
 
-    logger.Info("total kmers: " + Util::convert_to_string(kc.size())); 
+    logger.Info("total kmers: " + Util::to_str(kc.size())); 
 
     // extract high-frequency kmers
     std::unordered_set<unsigned int> hfk = *get_high_frequency_kmers(kc, percentile);
 
-    logger.Info("total avoided high-frequency kmers " + Util::convert_to_string(hfk.size()));
+    logger.Info("total avoided high-frequency kmers " + Util::to_str(hfk.size()));
 
     logger.Info("Sketching kmers...");
 
@@ -179,7 +194,7 @@ std::vector<std::vector<Kmer>> mzr::sketch_contigs(ContigContainerPtr contigs, u
         total_kmers += contig_sketches.size();
         sketches.push_back(contig_sketches);
     }
-    logger.Debug("Sketched " + Util::convert_to_string(total_kmers) + " kmers");
+    logger.Debug("Sketched " + Util::to_str(total_kmers) + " kmers");
 
     return (sketches);
 }

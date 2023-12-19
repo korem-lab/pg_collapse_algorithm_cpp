@@ -51,6 +51,11 @@ struct PyAlignment
     unsigned int s_begin;
     unsigned int q_end;
     unsigned int s_end;
+    std::string ToString() const
+    {
+        return Util::to_str(q_begin) + " " + Util::to_str(q_end) + " " + Util::to_str(q_cid) + " " +
+            Util::to_str(s_begin) + " " + Util::to_str(s_end) + " " + Util::to_str(s_cid);
+    }
 };
 
 struct Kmer
@@ -89,7 +94,7 @@ void build_kmer_map(std::unordered_map<std::string, std::vector<Coordinate>> & k
     std::unordered_map<std::string, std::vector<Coordinate>>::iterator kmap_it;
     unsigned int i, j;
     
-    logger.Info("Indexing " + Util::convert_to_string(contigs.size()) +  " contigs");
+    logger.Info("Indexing " + Util::to_str(contigs.size()) +  " contigs");
     kmer_map.reserve(contigs.size() * 280);
     while(contig_it != contigs.end())
     {
@@ -109,7 +114,7 @@ void build_kmer_map(std::unordered_map<std::string, std::vector<Coordinate>> & k
     }
 
     //kmer_map.size()
-    logger.Info("Built kmer map: " + Util::convert_to_string(kmer_map.size()) + " entries");
+    logger.Info("Built kmer map: " + Util::to_str(kmer_map.size()) + " entries");
 
 }
 
@@ -459,15 +464,15 @@ std::vector<PyAlignment> align_contigs(ContigContainerPtr container, int k, doub
     size_t print_chunk = std::ceil(N/10);
     double high_freq_kmer_filt = hfkf;
 
-    logger.Info("Sketching " + Util::convert_to_string(N) + " contigs.");
+    logger.Info("Sketching " + Util::to_str(N) + " contigs.");
     std::vector<std::vector<mzr::Kmer>> sketches;
     mzr::sketch_contigs(container, window_sz, kmer_len, 1-high_freq_kmer_filt, sketches);
-    logger.Info("Completed sketch_contigs: " + Util::convert_to_string(sketches.size()));
-
+    logger.Info("Completed sketch_contigs: " + Util::to_str(sketches.size()));
+    //TODO: refactor to bit-packed k-mers to avoid unnecessary copying
     for(int i = 0; i < N; i++)
     {
         if (i % 10000 == 0)
-            logger.Debug("Transferring " + Util::convert_to_string(i) + " of sketches... ");
+            logger.Debug("Transferring " + Util::to_str(i) + " of sketches... ");
 
         std::vector<Kmer> _s;
     
@@ -482,7 +487,7 @@ std::vector<PyAlignment> align_contigs(ContigContainerPtr container, int k, doub
 
     build_kmer_map(kmer_map, container_buf, kmer_len);
 
-    logger.Info("Launching chain_and_backtrack. Multithreaded? " + Util::convert_to_string(num_threads > 0 ? "true" : "false"));
+    logger.Info("Launching chain_and_backtrack. Multithreaded? " + Util::to_str(num_threads > 0 ? "true" : "false"));
 
     std::vector<Kmer> kmer_iter_fwd, kmer_iter_rev;
     std::vector<std::vector<Alignment>> thrd_aln(N);
@@ -492,17 +497,17 @@ std::vector<PyAlignment> align_contigs(ContigContainerPtr container, int k, doub
     unsigned int max_jump = mj;
     unsigned int min_overlap = mo;
 
-    //#pragma omp parallel shared(thrd_aln, container_buf, kmer_map)
+    #pragma omp parallel shared(thrd_aln, container_buf, kmer_map)
     {
-        //#pragma omp for schedule(dynamic)
+        #pragma omp for schedule(dynamic)
         for(int i = 0; i < N; i++)
         {
-            //#pragma omg task
+            #pragma omg task
             {
                 if (i % 5000 == 0)
-                    logger.Debug("analyzed contig " + Util::convert_to_string(i));
+                    logger.Debug("analyzed contig " + Util::to_str(i));
             }
-            //#pragma omp task
+            #pragma omp task
             {                
                 thrd_aln[i] = *(chain_and_backtrack(container_buf, container_buf[i], kmer_map, FWD, divergence_threshold, kmer_len, asym, large_gap, 
                           small_gap, max_jump, min_overlap));
@@ -530,7 +535,7 @@ std::vector<PyAlignment> align_contigs(ContigContainerPtr container, int k, doub
         aln_contig_it++;
     }
    
-    logger.Info("Num py_alignments: " + Util::convert_to_string(pyalignments.size()));   
+    logger.Info("Num py_alignments: " + Util::to_str(pyalignments.size()));   
     return pyalignments;
 }
 

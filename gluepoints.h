@@ -1039,13 +1039,14 @@ std::vector<SequenceInterval> build_sequence_intervals(std::vector<Gluepoint> co
     return seq_ivls;
 }
 
-std::vector<SequenceInterval> cpp_gen_gp(std::vector<PyAlignment> &alignments, ContigContainerPtr contigs, uint32_t max_sep = 75)
+std::vector<SequenceInterval> cpp_gen_gp(std::vector<PyAlignment> &alignments, ContigContainerPtr contigs)
 {
+    auto max_separation = config.GetValue<unsigned int>("max_separation");
     std::cout << "construct endpoints from alignments\n";
     auto endpoints = construct_endpoints(alignments); // same output
     std::cout << "cluster endpoints: " << endpoints->size() << std::endl;
 
-    auto clusters_q_projection = cluster_endpoints(*endpoints, max_sep, true); // same output     
+    auto clusters_q_projection = cluster_endpoints(*endpoints, max_separation, true); // same output     
 
     std::cout << "clusters_q_projection size: " << clusters_q_projection.size() << std::endl;
     std::unordered_map<uint32_t, std::vector<SetNode<Breakpoint> *>> bp_lookup;
@@ -1055,18 +1056,18 @@ std::vector<SequenceInterval> cpp_gen_gp(std::vector<PyAlignment> &alignments, C
     std::cout << "bp_lookup size: " << bp_lookup.size() << std::endl;
 
     std::unordered_set<SetNode<Breakpoint> *> equivalent_points;
-    group_breakpoints_into_gluepoints(*endpoints, equivalent_points, clusters_q_projection, alignments, bp_lookup, max_sep, true);
+    group_breakpoints_into_gluepoints(*endpoints, equivalent_points, clusters_q_projection, alignments, bp_lookup, max_separation, true);
     
     std::cout << "merging s-only clusters\n";
     std::cout << "equivalent_points size: " << equivalent_points.size() << std::endl;
     
-    merge_s_only_clusters(*endpoints, bp_lookup, equivalent_points, max_sep);
+    merge_s_only_clusters(*endpoints, bp_lookup, equivalent_points, max_separation);
     
     std::cout << "SIZE OF EQUIVALENT POINTS: " << equivalent_points.size() << std::endl;
     std::cout << "Building consensus gluepoints from breakpoint sets...\n";
     std::unordered_map<SetNode<Breakpoint> *, uint64_t> set_to_id;
     std::unordered_map<uint64_t, SetNode<Breakpoint> *> id_to_set;
-    auto consensus_gluepoints = build_consensus_gluepoints(bp_lookup, set_to_id, id_to_set, max_sep);
+    auto consensus_gluepoints = build_consensus_gluepoints(bp_lookup, set_to_id, id_to_set, max_separation);
     std::cout << "connecting roots through equivalent points...\n";
     connect_roots_through_equivalent_points(equivalent_points);
 
