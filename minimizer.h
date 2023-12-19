@@ -192,11 +192,11 @@ struct KmerGenerator
 
 void count_kmers(std::string const &s, std::unordered_map<unsigned int, unsigned int> &kc, uint8_t k);
 
-std::unique_ptr<std::unordered_set<unsigned int>> get_high_frequency_kmers(std::unordered_map<unsigned int, unsigned int> kc, double percentile = 0.99);
+std::unique_ptr<std::unordered_set<unsigned int>> get_high_frequency_kmers(std::unordered_map<unsigned int, unsigned int> kc);
 
 std::unique_ptr<std::vector<Kmer>> sketch_string(std::string const &s, uint8_t w, uint8_t k, std::unordered_set<unsigned int> const &hfk);
 
-std::vector<std::vector<Kmer>> sketch_contigs(ContigContainerPtr contigs, uint8_t w, uint8_t k, double percentile, std::vector<std::vector<Kmer>>& sketches);
+std::vector<std::vector<Kmer>> sketch_contigs(ContigContainerPtr contigs, uint8_t w, uint8_t k, std::vector<std::vector<Kmer>>& sketches);
 
 }
 

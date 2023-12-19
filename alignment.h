@@ -453,7 +453,7 @@ std::unique_ptr<std::vector<Alignment>> chain_and_backtrack(std::vector<Contig>&
 
 
 std::vector<PyAlignment> align_contigs(ContigContainerPtr container, int k, double divergence_threshold, int window_sz=1, int num_threads=10, bool asymmetric = false,
-    double lg = 2.0, double sg=0.5, int mj = 200, int mo=100, double hfkf = 1e-05)
+    double lg = 2.0, double sg=0.5, int mj = 200, int mo=100)
 {
     size_t N = container->size();
     std::vector<Contig> container_buf;
@@ -462,11 +462,10 @@ std::vector<PyAlignment> align_contigs(ContigContainerPtr container, int k, doub
     unsigned int kmer_len = k;
     std::unordered_map<std::string, std::vector<Coordinate>> kmer_map;
     size_t print_chunk = std::ceil(N/10);
-    double high_freq_kmer_filt = hfkf;
 
     logger.Info("Sketching " + Util::to_str(N) + " contigs.");
     std::vector<std::vector<mzr::Kmer>> sketches;
-    mzr::sketch_contigs(container, window_sz, kmer_len, 1-high_freq_kmer_filt, sketches);
+    mzr::sketch_contigs(container, window_sz, kmer_len, sketches);
     logger.Info("Completed sketch_contigs: " + Util::to_str(sketches.size()));
     //TODO: refactor to bit-packed k-mers to avoid unnecessary copying
     for(int i = 0; i < N; i++)

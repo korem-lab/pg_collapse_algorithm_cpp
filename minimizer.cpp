@@ -78,7 +78,7 @@ void mzr::count_kmers(const std::string &s, std::unordered_map<unsigned int, uns
     }
 }
 
-std::unique_ptr<std::unordered_set<unsigned int>> mzr::get_high_frequency_kmers(std::unordered_map<unsigned int, unsigned int> kc, double percentile)
+std::unique_ptr<std::unordered_set<unsigned int>> mzr::get_high_frequency_kmers(std::unordered_map<unsigned int, unsigned int> kc)
 {
     std::vector<uint64_t> freqs;
     freqs.reserve(kc.size());
@@ -88,22 +88,26 @@ std::unique_ptr<std::unordered_set<unsigned int>> mzr::get_high_frequency_kmers(
     {
         freqs.push_back(k.second);
     }
+    auto percentile = 1 - config.GetValue<double>("high_freq_kmer_filter");
+
     std::sort(freqs.begin(), freqs.end());
-    size_t p_idx = percentile * freqs.size() + 1;
-    high_freq_kmers.reserve(freqs.size() - p_idx + 1);
-    if (p_idx >= freqs.size())
+    if (percentile < 1)
     {
-        p_idx = freqs.size() - 1;
-    }
-    uint64_t cut_off = freqs[p_idx];
-    for (auto k : kc)
-    {
-        if (k.second >= cut_off)
+        size_t p_idx = percentile * freqs.size() + 1;
+        high_freq_kmers.reserve(freqs.size() - p_idx + 1);
+        if (p_idx >= freqs.size())
         {
-            high_freq_kmers.insert(k.first);
+            p_idx = freqs.size() - 1;
+        }
+        uint64_t cut_off = freqs[p_idx];
+        for (auto k : kc)
+        {
+            if (k.second >= cut_off)
+            {
+                high_freq_kmers.insert(k.first);
+            }
         }
     }
-
     return std::make_unique<std::unordered_set<unsigned int>>(high_freq_kmers);
 }
 
@@ -163,7 +167,7 @@ std::unique_ptr<std::vector<Kmer>> mzr::sketch_string(std::string const &s, uint
 }
 
 
-std::vector<std::vector<Kmer>> mzr::sketch_contigs(ContigContainerPtr contigs, uint8_t w, uint8_t k, double percentile, std::vector<std::vector<Kmer>>& sketches)
+std::vector<std::vector<Kmer>> mzr::sketch_contigs(ContigContainerPtr contigs, uint8_t w, uint8_t k, std::vector<std::vector<Kmer>>& sketches)
 {
 
     // count the kmers in the input
@@ -178,7 +182,7 @@ std::vector<std::vector<Kmer>> mzr::sketch_contigs(ContigContainerPtr contigs, u
     logger.Info("total kmers: " + Util::to_str(kc.size())); 
 
     // extract high-frequency kmers
-    std::unordered_set<unsigned int> hfk = *get_high_frequency_kmers(kc, percentile);
+    std::unordered_set<unsigned int> hfk = *get_high_frequency_kmers(kc);
 
     logger.Info("total avoided high-frequency kmers " + Util::to_str(hfk.size()));
 
