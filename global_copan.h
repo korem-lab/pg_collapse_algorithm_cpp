@@ -3,10 +3,11 @@
 
 #include "config_reader.h"
 #include "async_logger.h"
+#include "stats.h"
 
 extern Util::ConfigReader config;
 extern Util::AsyncLogger logger;
-
+extern Stats app_stats;
 namespace Util
 {
     void InitializeServices(const char* config_name);

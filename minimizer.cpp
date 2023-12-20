@@ -80,19 +80,18 @@ void mzr::count_kmers(const std::string &s, std::unordered_map<unsigned int, uns
 
 std::unique_ptr<std::unordered_set<unsigned int>> mzr::get_high_frequency_kmers(std::unordered_map<unsigned int, unsigned int> kc)
 {
-    std::vector<uint64_t> freqs;
-    freqs.reserve(kc.size());
-    std::unordered_set<unsigned int> high_freq_kmers;
-    
-    for (auto k : kc)
-    {
-        freqs.push_back(k.second);
-    }
+    std::unordered_set<unsigned int> high_freq_kmers;   
     auto percentile = 1 - config.GetValue<double>("high_freq_kmer_filter");
 
-    std::sort(freqs.begin(), freqs.end());
-    if (percentile < 1)
+    if (percentile < 1) // if percentile == 1 then don't filter
     {
+        std::vector<uint64_t> freqs;
+        freqs.reserve(kc.size());
+        for (auto k : kc)
+        {
+            freqs.push_back(k.second);
+        } 
+        std::sort(freqs.begin(), freqs.end());
         size_t p_idx = percentile * freqs.size() + 1;
         high_freq_kmers.reserve(freqs.size() - p_idx + 1);
         if (p_idx >= freqs.size())
@@ -172,7 +171,9 @@ std::vector<std::vector<Kmer>> mzr::sketch_contigs(ContigContainerPtr contigs, u
 
     // count the kmers in the input
     logger.Info("counting kmers...");
-    std::unordered_map<unsigned int, unsigned int> kc(contigs->size()* 1500);
+    auto kc_size = (app_stats.TotalContigSeqSize / contigs->size() - k + 1) * contigs->size();
+    std::unordered_map<unsigned int, unsigned int> kc;
+    kc.reserve(kc_size);
     
     for (const ExtContig &c : *contigs)
     {

@@ -317,11 +317,10 @@ public:
     }
     void build_graph()
     {
-        std::ofstream int_file1("/home/nat/Documents/GitHub/data/output/c__intervals.txt", std::ios::out);
+        
         for (int i = 0; i < intervals.size(); i++)
         {           
             auto ivl = intervals[i];             
-            int_file1 << ivl.cid << ": " << ivl.start << "," << ivl.end << "\n";
             
             auto key_a_b = get_key(ivl.alpha, ivl.beta);
             auto key_g_d = get_key(ivl.gamma, ivl.delta);
@@ -335,7 +334,6 @@ public:
             {
                 node = node_lookup[key_g_d];
             }
-
 
             if (node)
             {
@@ -351,10 +349,7 @@ public:
                 node_lookup[key_a_b] = node;
                 node_lookup[key_g_d] = node;
             }
-            if (node->uid == 102 || node->uid == 103 || node->uid == 104)
-                std::cout << node->uid << " " << ivl.cid << std::endl;
         }
-        int_file1.close();
 
         logger.Debug("Node_lookup size: " + Util::to_str<unsigned long>(node_lookup.size()));
         logger.Debug("ivl_to_node size: " + Util::to_str<unsigned long>(ivl_to_node.size()));

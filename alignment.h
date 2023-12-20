@@ -95,7 +95,7 @@ void build_kmer_map(std::unordered_map<std::string, std::vector<Coordinate>> & k
     unsigned int i, j;
     
     logger.Info("Indexing " + Util::to_str(contigs.size()) +  " contigs");
-    kmer_map.reserve(contigs.size() * 280);
+    kmer_map.reserve(app_stats.TotalSketchCount);
     while(contig_it != contigs.end())
     {
         for(i = 0; i < contig_it->sketch.size(); i++)
@@ -479,7 +479,7 @@ std::vector<PyAlignment> align_contigs(ContigContainerPtr container, int k, doub
         {
              _s.emplace_back(_k.as_string(kmer_len), _k.pos, _k.sign);
         }
-
+        app_stats.TotalSketchCount += _s.size();
         ExtContig ex = container->at(i);
         container_buf.emplace_back(ex.GetId(), ex.GetLen(), _s, ex.Hdr);
     }     
@@ -508,8 +508,15 @@ std::vector<PyAlignment> align_contigs(ContigContainerPtr container, int k, doub
             }
             #pragma omp task
             {                
-                thrd_aln[i] = *(chain_and_backtrack(container_buf, container_buf[i], kmer_map, FWD, divergence_threshold, kmer_len, asym, large_gap, 
+                try
+                {
+                    thrd_aln[i] = *(chain_and_backtrack(container_buf, container_buf[i], kmer_map, FWD, divergence_threshold, kmer_len, asym, large_gap, 
                           small_gap, max_jump, min_overlap));
+                }
+                catch(const std::exception& e)
+                {
+                    std::cerr << e.what() << '\n';
+                }
             }
         }    
     }
@@ -518,7 +525,6 @@ std::vector<PyAlignment> align_contigs(ContigContainerPtr container, int k, doub
     logger.Info("Merging per-thread alignments");
     
     std::vector<PyAlignment> pyalignments;
-    pyalignments.reserve(250000);
     
     std::vector<std::vector<Alignment>>::const_iterator aln_contig_it = thrd_aln.begin();
     std::vector<Alignment>::const_iterator aln_it;

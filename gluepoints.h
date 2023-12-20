@@ -758,10 +758,7 @@ std::vector<Gluepoint> build_consensus_gluepoints(
     uint64_t id_gen_sr = 4;
     uint64_t id_gen_sl = 5;
     uint64_t id_gen_er = 6;
-    uint64_t id_gen_el = 7;
-
-    set_to_id.reserve(lookup.size() * 3);
-    id_to_set.reserve(lookup.size() * 3);
+    uint64_t id_gen_el = 7;    
 
     uint64_t *id_gen_ptr;
     for (auto & [cid, bp_on_contigs] : lookup) {

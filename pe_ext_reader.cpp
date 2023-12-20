@@ -1,6 +1,5 @@
 #include "pe_ext_reader.h"
 
-
 std::vector<std::string> GetSampleList(std::string& sample_list_file_path)
 {
     std::ifstream sample_list_file(sample_list_file_path);
@@ -107,7 +106,8 @@ void PeExtReader::ParseFile(std::string& fasta_file_path, ContigContainer& out_c
                         econtig.Hdr = econtig.SampleName + ":" + econtig.Name + ":" + Util::to_str(econtig.m_bwd_ext_sz) + ":0";
                         Util::get_first_chars(econtig.Seq, flank_size + econtig.m_bwd_ext_sz);
                         econtig.m_is_tag = true;
-                        econtig.m_unext_len = econtig.Seq.size() - econtig.m_bwd_ext_sz - econtig.m_fwd_ext_sz;                              
+                        econtig.m_unext_len = econtig.Seq.size() - econtig.m_bwd_ext_sz - econtig.m_fwd_ext_sz;  
+                        app_stats.TotalContigSeqSize += econtig.GetLen();                            
                         out_contigContainer.push_back(econtig.Clone());
                     }
                     if(econtig.m_fwd_ext_sz >= min_adj_overlap)
@@ -116,6 +116,7 @@ void PeExtReader::ParseFile(std::string& fasta_file_path, ContigContainer& out_c
                         Util::get_last_chars(econtig.Seq, flank_size + econtig.m_fwd_ext_sz);
                         econtig.m_unext_len = econtig.Seq.size() - econtig.m_bwd_ext_sz - econtig.m_fwd_ext_sz;       
                         econtig.m_is_tag = true;
+                        app_stats.TotalContigSeqSize += econtig.GetLen();
                         out_contigContainer.push_back(econtig.Clone());
                     }               
                 }
@@ -132,7 +133,8 @@ void PeExtReader::ParseFile(std::string& fasta_file_path, ContigContainer& out_c
                     econtig.m_unext_len = unext_len;        
                     if (remove_duplicates)
                         unique_contigs.insert(econtig.Name);
-
+                        
+                    app_stats.TotalContigSeqSize += econtig.GetLen();
                     out_contigContainer.push_back(econtig);  
                 }                        
             }

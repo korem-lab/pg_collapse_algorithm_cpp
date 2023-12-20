@@ -123,7 +123,6 @@ struct KmerGenerator
     Kmer min_kmer_in_window(uint8_t w) const
     {
         std::string::const_iterator f = seq_it - w + 1; // move f to the start of the forward window
-        std::string::const_iterator r = f;
         unsigned int _kmer = pack(f - k, f);
         unsigned int _rev_kmer = pack_reverse(f - k, f, true);
 
