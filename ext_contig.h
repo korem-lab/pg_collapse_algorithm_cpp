@@ -22,6 +22,7 @@ class ExtContig
         int GetId() const {return m_contig_id;}        
         unsigned int GetFwdExt() const {return m_bwd_ext_sz; }
         unsigned int GetBwdExt() const {return m_bwd_ext_sz; }  
+        unsigned int GetUnExtLen() {return m_unext_len;}
         unsigned int GetLen() const {return Seq.size();}
         bool GetIsTag() {return m_is_tag;}
         ExtContig Clone()
@@ -35,6 +36,7 @@ class ExtContig
             c.m_fwd_ext_sz = m_fwd_ext_sz;
             c.m_sample_id = m_sample_id;
             c.m_contig_id = m_contig_id;
+            c.m_unext_len = m_unext_len;
             c.m_is_tag = m_is_tag;            
             return c;
         }
