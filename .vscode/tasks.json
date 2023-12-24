@@ -11,7 +11,7 @@
                 "-pthread",
                 "-fopenmp",
                 "-o",
-                "${fileDirname}/copangraph.exe",
+                "${workspaceFolder}/copan",
                 "--verbose",
                 "-O0"
             ],
