@@ -19,8 +19,7 @@ namespace mzr
 const uint8_t POSITIVE = 0;
 const uint8_t NEGATIVE = 1;
 
-uint8_t char_to_num(char c);
-uint8_t char_to_num_complement(char c);
+uint8_t char_to_num(char c, bool complement = false);
 
 char num_to_char(uint8_t b);
 
@@ -72,7 +71,7 @@ struct KmerGenerator
     KmerGenerator(std::string const &s, uint8_t k, unsigned int mask, bool lex_low = false) : seq(s), k(k), mask(mask), lxl(lex_low)
     {
         seq_it = seq.begin() + k;
-        kmer = Kmer(pack(seq.begin(), seq_it), 0, POSITIVE);
+        kmer = Kmer(pack(seq.begin(), seq_it, false), 0, POSITIVE);
 
         // replace the kmer with the lexicographically lowest version between it
         // and it's reverse complement
@@ -83,7 +82,7 @@ struct KmerGenerator
             // auto rev_seq_it = rev_seq.end() - k -  1;
             // rev_kmer = Kmer(pack(rev_seq_it + 1, rev_seq.end(), true), 0, NEGATIVE);
 
-            rev_kmer = Kmer(pack_reverse(seq.begin(), seq_it, true), 0, NEGATIVE);
+            rev_kmer = Kmer(pack(seq.begin(), seq_it, true), 0, NEGATIVE);
         }
         init = true;
     }
@@ -101,13 +100,13 @@ struct KmerGenerator
         if (!init) // it's an intermediate call, and we need to pack a new base
         {            
             unsigned int pos = seq_it - k - seq.begin() + 1;
-            uint32_t n = char_to_num(*seq_it);
+            uint32_t n = char_to_num(*seq_it, false);
 
             kmer = Kmer(mask & (kmer.seq << 2 | n), pos, POSITIVE);            
 
             if (lxl)
             {
-                uint32_t nc = char_to_num_complement(*seq_it);
+                uint32_t nc = char_to_num(*seq_it, true);
                 rev_kmer = Kmer(mask & (rev_kmer.seq >> 2 | (nc << (k * 2 - 2))), pos, NEGATIVE);
             }
             seq_it++;
@@ -120,12 +119,11 @@ struct KmerGenerator
         }
     }
 
-    Kmer min_kmer_in_window(uint8_t w) const
+    Kmer min_kmer_in_window(uint32_t window_start) const
     {
-        std::string::const_iterator f = seq_it - w + 1; // move f to the start of the forward window
-        std::string::const_iterator r = f;
-        unsigned int _kmer = pack(f - k, f);
-        unsigned int _rev_kmer = pack_reverse(f - k, f, true);
+        std::string::const_iterator f = seq.begin() + window_start + k; // move f to the start of the forward window
+        unsigned int _kmer = pack(f - k, f, false);
+        unsigned int _rev_kmer = pack(f - k, f, true);
 
         // select lowest kmer
         unsigned int min_k = (_kmer < _rev_kmer) ? _kmer : _rev_kmer;
@@ -136,6 +134,7 @@ struct KmerGenerator
        
         while (f <= seq_it)
         {
+            if (_kmer < min_k) 
             {
                 min_k = _kmer;
                 min_pos = f - seq.begin() - k;
@@ -148,8 +147,8 @@ struct KmerGenerator
                 sign = NEGATIVE;
             }            
             
-            _kmer = mask & (_kmer << 2 | char_to_num(*f));
-            _rev_kmer = mask & (_rev_kmer >> 2 | char_to_num_complement(*f) << (k * 2 - 2));
+            _kmer = mask & (_kmer << 2 | char_to_num(*f, false));
+            _rev_kmer = mask & (_rev_kmer >> 2 | char_to_num(*f, true) << (k * 2 - 2));
             f++;
         }
         return {min_k, min_pos, sign};
@@ -159,25 +158,13 @@ struct KmerGenerator
     {
         unsigned int _kmer = 0;
         unsigned int base;
+        unsigned int i = 0;
         while (begin < end)
         {
-            base = char_to_num(*begin);
-            _kmer = (_kmer << 2) | base;
+            base = char_to_num(*begin, false);
+            _kmer = !complement ? _kmer << 2 | base : _kmer | base << 2 * i;
             begin++;
-        }
-        return mask & (!complement ? _kmer : ~_kmer);
-    }
-    unsigned int pack_reverse(std::string::const_iterator begin, std::string::const_iterator end, bool complement = false) const
-    {
-        unsigned int _kmer = 0;
-        unsigned int base;
-        int i = 0;
-        while (begin < end)
-        {
-            base = char_to_num(*begin);
-            _kmer = _kmer | base << 2 * i;
             i++;
-            begin++;
         }
         return mask & (!complement ? _kmer : ~_kmer);
     }
