@@ -30,10 +30,14 @@ int PeExtReader::Parse(ContigContainerPtr out_contigContainer, IdMapPtr out_idma
 }
 int PeExtReader::Parse(std::string& fasta_file_path, ContigContainerPtr out_contigContainer, IdMapPtr out_idmap)
 {
+
+    int num_samples = 1;
     if (Util::get_file_ext(fasta_file_path) != "fasta")
     {
         auto sample_list = GetSampleList(fasta_file_path);
-        return Parse(sample_list, out_contigContainer, out_idmap);
+        num_samples = Parse(sample_list, out_contigContainer, out_idmap);
+        SaveContigContainer(*out_contigContainer);
+        return num_samples;
     }
     else
     {
@@ -41,7 +45,7 @@ int PeExtReader::Parse(std::string& fasta_file_path, ContigContainerPtr out_cont
         {
             ParseFile(fasta_file_path, *out_contigContainer, out_idmap, 0);   
             SaveContigContainer(*out_contigContainer);    
-            return 1;
+            return num_samples;
         }
         else
         {
@@ -58,7 +62,6 @@ int PeExtReader::Parse(std::vector<std::string>& fasta_path_list, ContigContaine
     {
         ParseFile(fasta_file_path, *out_contigContainer, out_idmap, fasta_file_num++);
     }
-    SaveContigContainer(*out_contigContainer);
     return fasta_file_num;
 }
 
