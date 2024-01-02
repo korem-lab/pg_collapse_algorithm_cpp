@@ -3,36 +3,13 @@
 
 using namespace mzr;
 
-uint8_t mzr::char_to_num(char c)
-{
-    switch (c)
-    {
-    case 'A':
-        return 0;
-    case 'C':
-        return 1;
-    case 'G':
-        return 2;
-    case 'T':
-        return 3;
-    default:
-        return 255;
-    }
-}
-uint8_t mzr::char_to_num_complement(char c)
-{
-    switch (c)
-    {
-    case 'A':
-        return 3;
-    case 'C':
-        return 2;
-    case 'G':
-        return 1;
-    case 'T':
-        return 0;
-    default:
-        return 255;
+uint8_t mzr::char_to_num(char c, bool complment = false) {
+    switch (c) {
+        case 'A': return !complment ? 0 : 3;
+        case 'C': return !complment ? 1 : 2;
+        case 'G': return !complment ? 2 : 1;
+        case 'T': return !complment ? 3 : 0;
+        default: return 255;
     }
 }
 
@@ -115,7 +92,7 @@ std::unique_ptr<std::vector<Kmer>> mzr::sketch_string(std::string const &s, uint
 {
     // setup
     std::vector<Kmer> sketch;
-    sketch.reserve(s.length() / w);
+    sketch.reserve(s.length() * 2 / w);  // rough guestimate on the size of the sketch
     KmerGenerator kmer_gen(s, k, 0x3FFFFFFF, true);
 
     Kmer min_k = kmer_gen.get_kmer();
@@ -144,10 +121,10 @@ std::unique_ptr<std::vector<Kmer>> mzr::sketch_string(std::string const &s, uint
         // upon getting the next kmer, the current minimum kmer will be outside the window.
         // we therefore need to compute the new minimum from scratch. This may be the next kmer
         // or, it may be any of the other w-1 kmers in the window.
-        bool lfk = hfk.find(min_k.seq) == hfk.end();
+        bool lfk = hfk.find(candidate.seq) == hfk.end();
         if (lfk && min_k.pos < window_pos - w)
         {
-            min_k = kmer_gen.min_kmer_in_window(w);;                
+            min_k = kmer_gen.min_kmer_in_window(window_pos - w);;                
             sketch.emplace_back(min_k);
         }
         else if (lfk && candidate.seq < min_k.seq)
