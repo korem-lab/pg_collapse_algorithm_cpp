@@ -20,7 +20,7 @@ class ExtContig
         std::string Seq;
         
         int GetId() const {return m_contig_id;}        
-        unsigned int GetFwdExt() const {return m_bwd_ext_sz; }
+        unsigned int GetFwdExt() const {return m_fwd_ext_sz; }
         unsigned int GetBwdExt() const {return m_bwd_ext_sz; }  
         unsigned int GetUnExtLen() {return m_unext_len;}
         unsigned int GetLen() const {return Seq.size();}
