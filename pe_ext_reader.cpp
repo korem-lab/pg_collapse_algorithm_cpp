@@ -108,7 +108,7 @@ void PeExtReader::ParseFile(std::string& fasta_file_path, ContigContainer& out_c
                         econtig.m_is_tag = true;
                         econtig.m_unext_len = econtig.Seq.size() - econtig.m_bwd_ext_sz - econtig.m_fwd_ext_sz;  
                         app_stats.TotalContigSeqSize += econtig.GetLen();                            
-                        out_contigContainer.push_back(econtig.Clone());
+                        out_contigContainer.push_back(econtig);
                     }
                     if(econtig.m_fwd_ext_sz >= min_adj_overlap)
                     {
@@ -117,7 +117,7 @@ void PeExtReader::ParseFile(std::string& fasta_file_path, ContigContainer& out_c
                         econtig.m_unext_len = econtig.Seq.size() - econtig.m_bwd_ext_sz - econtig.m_fwd_ext_sz;       
                         econtig.m_is_tag = true;
                         app_stats.TotalContigSeqSize += econtig.GetLen();
-                        out_contigContainer.push_back(econtig.Clone());
+                        out_contigContainer.push_back(econtig);
                     }               
                 }
                 else
