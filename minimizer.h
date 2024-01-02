@@ -135,6 +135,7 @@ struct KmerGenerator
        
         while (f <= seq_it)
         {
+            if (_kmer < min_k)
             {
                 min_k = _kmer;
                 min_pos = f - seq.begin() - k;
@@ -187,6 +188,7 @@ struct KmerGenerator
     unsigned int mask;
     bool lxl, init;
     Kmer kmer, rev_kmer;
+    
 };
 
 void count_kmers(std::string const &s, std::unordered_map<unsigned int, unsigned int> &kc, uint8_t k);
