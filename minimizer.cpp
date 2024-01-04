@@ -99,9 +99,10 @@ std::unordered_set<uint32_t> mzr::get_high_frequency_kmers(std::unordered_map<ui
             p_idx = freqs.size() - 1;
         }
         uint64_t cut_off = freqs[p_idx];
+    
         for (auto k : kc)
         {
-            if (k.second >= cut_off)
+            if (k.second >= cut_off)// note: for now do not remove unique kmers => // || k.second == 1
             {
                 high_freq_kmers.insert(k.first);
             }
