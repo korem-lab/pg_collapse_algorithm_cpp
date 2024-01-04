@@ -100,15 +100,7 @@ void build_kmer_map(std::unordered_map<std::string, std::vector<Coordinate>> & k
     {
         for(i = 0; i < contig_it->sketch.size(); i++)
         {
-            auto it = kmer_map.find(contig_it->sketch[i].kmer);
-            if (it == kmer_map.end())
-            {
-                kmer_map[contig_it->sketch[i].kmer].emplace_back(contig_it->sketch[i].pos, contig_it->cid, contig_it->sketch[i].sign);
-            }
-            else
-            {
-                it->second.emplace_back(contig_it->sketch[i].pos, contig_it->cid, contig_it->sketch[i].sign);
-            }
+            kmer_map[contig_it->sketch[i].kmer].emplace_back(contig_it->sketch[i].pos, contig_it->cid, contig_it->sketch[i].sign);
         }
         contig_it++;
     }
