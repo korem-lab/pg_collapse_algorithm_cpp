@@ -8,10 +8,11 @@
 #include "alignment.h"
 #include "gluepoints.h"
 #include "copangraph.h"
+#include "stats.h"
 
- Util::ConfigReader config;
- Util::AsyncLogger logger;
-
+Util::ConfigReader config;
+Util::AsyncLogger logger;
+Stats app_stats;
 
 int main(int argc, char *argv[])
 {
@@ -27,8 +28,7 @@ int main(int argc, char *argv[])
     
     if (num_samples > 0)
     {
-        std::vector<PyAlignment> alignments = compute_alignments(ccptr);   
-        GluepointMapPtr gmp = nullptr;    
+        std::vector<PyAlignment> alignments = compute_alignments(ccptr);  
         std::vector<SequenceInterval> node_intervals = cpp_gen_gp(alignments, ccptr);
 
         CoPanGraph copan = CoPanGraph(node_intervals, ccptr, imptr, num_samples);
