@@ -78,7 +78,7 @@ void mzr::count_kmers(const std::string &s, std::unordered_map<unsigned int, uns
     }
 }
 
-std::unique_ptr<std::unordered_set<unsigned int>> mzr::get_high_frequency_kmers(std::unordered_map<unsigned int, unsigned int> kc)
+std::unordered_set<unsigned int> mzr::get_high_frequency_kmers(std::unordered_map<unsigned int, unsigned int> kc)
 {
     std::unordered_set<unsigned int> high_freq_kmers;   
     auto percentile = 1 - config.GetValue<double>("high_freq_kmer_filter");
@@ -107,10 +107,10 @@ std::unique_ptr<std::unordered_set<unsigned int>> mzr::get_high_frequency_kmers(
             }
         }
     }
-    return std::make_unique<std::unordered_set<unsigned int>>(high_freq_kmers);
+    return high_freq_kmers;
 }
 
-std::unique_ptr<std::vector<Kmer>> mzr::sketch_string(std::string const &s, uint8_t w, uint8_t k, std::unordered_set<unsigned int> const &hfk)
+std::vector<Kmer> mzr::sketch_string(std::string const &s, uint8_t w, uint8_t k, std::unordered_set<unsigned int> const &hfk)
 {
     // setup
     std::vector<Kmer> sketch;
@@ -162,7 +162,7 @@ std::unique_ptr<std::vector<Kmer>> mzr::sketch_string(std::string const &s, uint
     // {
     //     ret.push_back(k);
     // }
-    return std::make_unique<std::vector<Kmer>>(sketch);
+    return sketch;
 }
 
 
@@ -183,7 +183,7 @@ std::vector<std::vector<Kmer>> mzr::sketch_contigs(ContigContainerPtr contigs, u
     logger.Info("total kmers: " + Util::to_str(kc.size())); 
 
     // extract high-frequency kmers
-    std::unordered_set<unsigned int> hfk = *get_high_frequency_kmers(kc);
+    std::unordered_set<unsigned int> hfk = get_high_frequency_kmers(kc);
 
     logger.Info("total avoided high-frequency kmers " + Util::to_str(hfk.size()));
 
@@ -194,7 +194,7 @@ std::vector<std::vector<Kmer>> mzr::sketch_contigs(ContigContainerPtr contigs, u
     long total_kmers = 0;
     for (const ExtContig &c : *contigs)
     {
-        auto contig_sketches = *sketch_string(c.Seq, w, k, hfk);
+        auto contig_sketches = sketch_string(c.Seq, w, k, hfk);
         total_kmers += contig_sketches.size();
         sketches.push_back(contig_sketches);
     }
