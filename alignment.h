@@ -184,7 +184,7 @@ int64_t get_max_chain_end(std::vector<double> & scrt)
     return max_idx;
 }
 
-std::unique_ptr<std::vector<Alignment>> chain_and_backtrack(std::vector<Contig>& container_buf, const Contig& contig, const std::unordered_map<std::string, std::vector<Coordinate>> & kmer_map,
+std::vector<Alignment> chain_and_backtrack(std::vector<Contig>& container_buf, const Contig& contig, const std::unordered_map<std::string, std::vector<Coordinate>> & kmer_map,
     const std::string& orientation, double divergence_threshold, unsigned int kmer_len, bool asymmentric, double large_gap = 2.0, 
     double small_gap = 0.5, unsigned int max_jump = 200, unsigned int min_overlap = 100)
 {
@@ -448,7 +448,7 @@ std::unique_ptr<std::vector<Alignment>> chain_and_backtrack(std::vector<Contig>&
         }
     }
 
-    return std::make_unique<std::vector<Alignment>>(alignments);
+    return (alignments);
 }
 
 
@@ -510,7 +510,7 @@ std::vector<PyAlignment> align_contigs(ContigContainerPtr container, int k, doub
             {                
                 try
                 {
-                    thrd_aln[i] = *(chain_and_backtrack(container_buf, container_buf[i], kmer_map, FWD, divergence_threshold, kmer_len, asym, large_gap, 
+                    thrd_aln[i] = (chain_and_backtrack(container_buf, container_buf[i], kmer_map, FWD, divergence_threshold, kmer_len, asym, large_gap, 
                           small_gap, max_jump, min_overlap));
                 }
                 catch(const std::exception& e)
