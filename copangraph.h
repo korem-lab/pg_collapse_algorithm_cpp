@@ -16,9 +16,9 @@
 
 
 template <>
-struct std::hash<std::pair<unsigned int, unsigned int>>
+struct std::hash<std::pair<uint32_t, uint32_t>>
 {
-    std::size_t operator()(const std::pair<const unsigned int, const unsigned int> &v) const
+    std::size_t operator()(const std::pair<const uint32_t, const uint32_t> &v) const
     {
         size_t h = (size_t(v.first) << 32) + size_t(v.second);
         h *= 1231231557ull; // "random" uneven integer.
@@ -27,7 +27,7 @@ struct std::hash<std::pair<unsigned int, unsigned int>>
     }
 };
 
-std::pair<unsigned int, unsigned int> get_key(unsigned int x, unsigned int y)
+std::pair<uint32_t, uint32_t> get_key(uint32_t x, uint32_t y)
 {
     if (x < y)
         return std::make_pair(x, y);
@@ -127,31 +127,31 @@ private:
 class CopanNodeSeq : public Element
 {
 public:
-    CopanNodeSeq(std::string &nid, const std::string &full_name, unsigned int sid, unsigned int cid, const std::string &contig_name,
-                 unsigned int lp, unsigned int rp, char ori, bool is_tag, const std::string &seq, int fold = 80) : m_nid{nid}, m_full_name{full_name},
+    CopanNodeSeq(std::string &nid, const std::string &full_name, uint32_t sid, uint32_t cid, const std::string &contig_name,
+                 uint32_t lp, uint32_t rp, char ori, bool is_tag, const std::string &seq, int fold = 80) : m_nid{nid}, m_full_name{full_name},
                                                                                                                    m_cid{cid}, m_sid{sid}, m_contig_name{contig_name}, m_lp{lp}, m_rp{rp}, m_ori{ori}, m_is_tag{is_tag}, m_seq{seq}, m_fold{fold} {}
 
     std::string ToString() override
     {
-        auto hdr = ">" + m_nid + ":" + m_full_name + ":" + Util::to_str<unsigned int>(m_sid) + ":" + Util::to_str<unsigned int>(m_cid) +
-                   ":" + m_contig_name + ":" + Util::to_str<unsigned int>(m_lp) + ":" + Util::to_str<unsigned int>(m_rp) + ":" + m_ori + ":" + Util::to_str(m_is_tag);
+        auto hdr = ">" + m_nid + ":" + m_full_name + ":" + Util::to_str<uint32_t>(m_sid) + ":" + Util::to_str<uint32_t>(m_cid) +
+                   ":" + m_contig_name + ":" + Util::to_str<uint32_t>(m_lp) + ":" + Util::to_str<uint32_t>(m_rp) + ":" + m_ori + ":" + Util::to_str(m_is_tag);
         hdr += "\n" + m_seq;
         return hdr;
     }
     std::string ToToken() override
     {
-        return m_nid + ":" + Util::to_str<unsigned int>(m_sid) + ":" + Util::to_str<unsigned int>(m_cid) +
-               Util::to_str<unsigned int>(m_lp) + ":" + Util::to_str<unsigned int>(m_rp) + ":" + m_ori;
+        return m_nid + ":" + Util::to_str<uint32_t>(m_sid) + ":" + Util::to_str<uint32_t>(m_cid) +
+               Util::to_str<uint32_t>(m_lp) + ":" + Util::to_str<uint32_t>(m_rp) + ":" + m_ori;
     }
 
 private:
     std::string m_nid;
     std::string m_full_name;
-    unsigned int m_sid;
-    unsigned int m_cid;
+    uint32_t m_sid;
+    uint32_t m_cid;
     std::string m_contig_name;
-    unsigned int m_lp;
-    unsigned int m_rp;
+    uint32_t m_lp;
+    uint32_t m_rp;
     char m_ori;
     std::string m_seq;
     bool m_is_tag;
@@ -162,7 +162,7 @@ class Node
 {
 public:
     Node() {}
-    Node(int i, unsigned int alpha, unsigned int beta, unsigned int gamma, unsigned int delta) : uid{++uid_counter}, intervals{i}, init_alpha{alpha}, init_beta{beta}, init_gamma{gamma}, init_delta{delta}
+    Node(int i, uint32_t alpha, uint32_t beta, uint32_t gamma, uint32_t delta) : uid{++uid_counter}, intervals{i}, init_alpha{alpha}, init_beta{beta}, init_gamma{gamma}, init_delta{delta}
     {
         oris[i] = '+';
         name = Util::to_str<int>(uid);
@@ -190,9 +190,9 @@ public:
         for (auto p : common_numerals)
         {
             fullName.append("(");
-            fullName.append(Util::to_str<unsigned int>(p.first));
+            fullName.append(Util::to_str<uint32_t>(p.first));
             fullName.append(",");
-            fullName.append(Util::to_str<unsigned int>(p.second));
+            fullName.append(Util::to_str<uint32_t>(p.second));
             fullName.append(")");
             fullName.append(",");
         }
@@ -223,15 +223,15 @@ public:
                GetName() + ",ivl=" + Util::convert_to_csv(intervals) + ",oris=" + Util::convert_to_csv(oris) + ")";
     }
 
-    void add(int i, unsigned int alpha, unsigned int beta, unsigned int gamma, unsigned int delta,
-             std::map<std::pair<unsigned int, unsigned int>, Node *> &lookup)
+    void add(int i, uint32_t alpha, uint32_t beta, uint32_t gamma, uint32_t delta,
+             std::map<std::pair<uint32_t, uint32_t>, Node *> &lookup)
     {
         intervals.push_back(i);
 
         auto key_a_b = get_key(alpha, beta);
         auto key_g_d = get_key(gamma, delta);
 
-        std::unordered_set<std::pair<unsigned int, unsigned int>> intersection{};
+        std::unordered_set<std::pair<uint32_t, uint32_t>> intersection{};
 
         set_intersection(intersection, key_a_b, key_g_d);
 
@@ -256,10 +256,10 @@ public:
     }
 
 private:
-    void set_intersection(std::unordered_set<std::pair<unsigned int, unsigned int>>& intersection, 
-        std::pair<unsigned int, unsigned int>& key_a_b, std::pair<unsigned int, unsigned int>& key_g_d)
+    void set_intersection(std::unordered_set<std::pair<uint32_t, uint32_t>>& intersection, 
+        std::pair<uint32_t, uint32_t>& key_a_b, std::pair<uint32_t, uint32_t>& key_g_d)
     {
-        for (const std::pair<unsigned int, unsigned int>& p: common_numerals) {
+        for (const std::pair<uint32_t, uint32_t>& p: common_numerals) {
             if (p.first == key_a_b.first && p.second == key_a_b.second)
                 intersection.insert(key_a_b);
             if (p.first == key_g_d.first && p.second == key_g_d.second)
@@ -270,15 +270,15 @@ private:
     std::string name;
     std::vector<int> intervals;
     std::unordered_map<int, char> oris;
-    unsigned int init_alpha, init_beta, init_gamma, init_delta;
+    uint32_t init_alpha, init_beta, init_gamma, init_delta;
     int uid;
-    std::unordered_set<std::pair<unsigned int, unsigned int>> common_numerals;
+    std::unordered_set<std::pair<uint32_t, uint32_t>> common_numerals;
     bool sorted = false;
     static int uid_counter;
 };
 
 int Node::uid_counter = 0;
-typedef std::map<std::pair<unsigned int, unsigned int>, Node *> NodeMap;
+typedef std::map<std::pair<uint32_t, uint32_t>, Node *> NodeMap;
 
 class CoPanGraph
 {
@@ -292,14 +292,14 @@ private:
     NodeMap node_lookup{};
 
 public:
-    CoPanGraph(std::vector<SequenceInterval> &seq_intervals, ContigContainerPtr contig_container_ptr, IdMapPtr contig_to_sample_map, unsigned int num_of_samples) : intervals{seq_intervals}, contig_container{contig_container_ptr}, cid_to_sid{contig_to_sample_map}, num_samples{num_of_samples}
+    CoPanGraph(std::vector<SequenceInterval> &seq_intervals, ContigContainerPtr contig_container_ptr, IdMapPtr contig_to_sample_map, uint32_t num_of_samples) : intervals{seq_intervals}, contig_container{contig_container_ptr}, cid_to_sid{contig_to_sample_map}, num_samples{num_of_samples}
     {
     }
-    unsigned int get_start_of(int i)
+    uint32_t get_start_of(int i)
     {
         return intervals[i].start;
     }
-    unsigned int get_end_of(int i)
+    uint32_t get_end_of(int i)
     {
         return intervals[i].end;
     }
@@ -524,7 +524,7 @@ public:
         }
     }
 
-    std::shared_ptr<Element> build_elem(std::string &nid, int cid, unsigned int start, unsigned int end, const std::string &full_name,
+    std::shared_ptr<Element> build_elem(std::string &nid, int cid, uint32_t start, uint32_t end, const std::string &full_name,
                                         char ori, int sid, const std::string &format)
     {
         auto &extended_contig = contig_container->at(cid);
@@ -536,42 +536,42 @@ public:
        
         if (end < start_of_contig)
         {
-            s_start = "0-" + Util::to_str<unsigned int>(abs(start - start_of_contig));
-            s_end = "0-" + Util::to_str<unsigned int>(abs(end - start_of_contig));
+            s_start = "0-" + Util::to_str<uint32_t>(abs(start - start_of_contig));
+            s_end = "0-" + Util::to_str<uint32_t>(abs(end - start_of_contig));
             is_tag = true;
         }
         else if (start < start_of_contig && start_of_contig <= end && end < end_of_contig)
         {
-            s_start = "0-" + Util::to_str<unsigned int>(abs(start - start_of_contig));
-            s_end = Util::to_str<unsigned int>(end - start_of_contig);
+            s_start = "0-" + Util::to_str<uint32_t>(abs(start - start_of_contig));
+            s_end = Util::to_str<uint32_t>(end - start_of_contig);
             is_tag = true;
         }
         else if (start_of_contig <= start && start < end_of_contig &&
                  start_of_contig <= end && end < end_of_contig)
         {
-            s_start = Util::to_str<unsigned int>(start - start_of_contig);
-            s_end = Util::to_str<unsigned int>(end - start_of_contig);
+            s_start = Util::to_str<uint32_t>(start - start_of_contig);
+            s_end = Util::to_str<uint32_t>(end - start_of_contig);
         }
         else if (start_of_contig <= start && start < end_of_contig && end >= end_of_contig)
         {
-            s_start = Util::to_str<unsigned int>(start - start_of_contig);
-            s_end = Util::to_str<unsigned int>(extended_contig.GetUnExtLen()) + "+" +
-                    Util::to_str<unsigned int>(end - end_of_contig);
+            s_start = Util::to_str<uint32_t>(start - start_of_contig);
+            s_end = Util::to_str<uint32_t>(extended_contig.GetUnExtLen()) + "+" +
+                    Util::to_str<uint32_t>(end - end_of_contig);
             is_tag = true;
         }
         else if (start >= end_of_contig)
         {
-            s_start = Util::to_str<unsigned int>(extended_contig.GetUnExtLen()) + "+" +
-                      Util::to_str<unsigned int>(start - end_of_contig);
-            s_end = Util::to_str<unsigned int>(extended_contig.GetUnExtLen()) + "+" +
-                    Util::to_str<unsigned int>(end - end_of_contig);
+            s_start = Util::to_str<uint32_t>(extended_contig.GetUnExtLen()) + "+" +
+                      Util::to_str<uint32_t>(start - end_of_contig);
+            s_end = Util::to_str<uint32_t>(extended_contig.GetUnExtLen()) + "+" +
+                    Util::to_str<uint32_t>(end - end_of_contig);
             is_tag = true;
         }
         else if (start < start_of_contig && end >= end_of_contig)
         {
-            s_start = "0-" + Util::to_str<unsigned int>(start - start_of_contig);
-            s_end = Util::to_str<unsigned int>(extended_contig.GetUnExtLen()) +
-                    "+" + Util::to_str<unsigned int>(end - end_of_contig);
+            s_start = "0-" + Util::to_str<uint32_t>(start - start_of_contig);
+            s_end = Util::to_str<uint32_t>(extended_contig.GetUnExtLen()) +
+                    "+" + Util::to_str<uint32_t>(end - end_of_contig);
             is_tag = true;
         }
         else

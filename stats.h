@@ -4,8 +4,8 @@
 
 struct Stats
 {
-    unsigned int TotalContigSeqSize;
-    unsigned int TotalSketchCount;
+    uint32_t TotalContigSeqSize;
+    uint32_t TotalSketchCount;
 };
 
 #endif

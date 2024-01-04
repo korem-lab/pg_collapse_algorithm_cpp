@@ -24,8 +24,8 @@ enum PointType
 
 struct Point
 {
-    Point(unsigned int q_cid, unsigned int s_cid, unsigned int q_pos, unsigned int s_pos, const PyAlignment &alignment, PointType pt) : q_cid(q_cid), s_cid(s_cid), q_pos(q_pos), s_pos(s_pos), alignment(alignment), pointType{pt} {}
-    unsigned int q_cid, s_cid, q_pos, s_pos;
+    Point(uint32_t q_cid, uint32_t s_cid, uint32_t q_pos, uint32_t s_pos, const PyAlignment &alignment, PointType pt) : q_cid(q_cid), s_cid(s_cid), q_pos(q_pos), s_pos(s_pos), alignment(alignment), pointType{pt} {}
+    uint32_t q_cid, s_cid, q_pos, s_pos;
     const PyAlignment &alignment;
     PointType pointType;
     std::string ToString() const
@@ -141,7 +141,7 @@ struct ClusterGenerator
 };
 
 template <typename Iterator, typename Lambda>
-unsigned int median(Iterator const &begin, Iterator const &end, Lambda &&extract_val)
+uint32_t median(Iterator const &begin, Iterator const &end, Lambda &&extract_val)
 {
     assert((end - begin) != 0);
     size_t n = end - begin;
@@ -151,14 +151,14 @@ unsigned int median(Iterator const &begin, Iterator const &end, Lambda &&extract
     }
     else
     {
-        unsigned int a = extract_val(begin + n / 2);
-        unsigned int b = extract_val(begin + n / 2 - 1);
+        uint32_t a = extract_val(begin + n / 2);
+        uint32_t b = extract_val(begin + n / 2 - 1);
         return (a + b) / 2;
     }
 };
 
 typedef std::vector<Gluepoint> GluepointList;
-typedef std::unordered_map<unsigned int, GluepointList> GluepointMap;
+typedef std::unordered_map<uint32_t, GluepointList> GluepointMap;
 typedef std::shared_ptr<GluepointMap> GluepointMapPtr;
 
 auto same_cluster_q = [](Point const & a, Point const & b, uint32_t max_separation) -> bool {
@@ -169,24 +169,24 @@ auto same_cluster_s = [](Point const & a, Point const & b, uint32_t max_separati
     return (a.s_cid == b.s_cid) && (((a.s_pos > b.s_pos) && (a.s_pos - b.s_pos <= max_separation)) || ((a.s_pos <= b.s_pos) && (b.s_pos - a.s_pos <= max_separation)));
 };
 
-unsigned int abs_diff(unsigned int a, unsigned int b)
+uint32_t abs_diff(uint32_t a, uint32_t b)
 {
     return (a > b) * (a - b) + (a <= b) * (b - a);
 }
 
-std::shared_ptr<std::unordered_map<unsigned int, std::vector<Point>>> construct_endpoints(std::vector<PyAlignment> &alignments)
+std::shared_ptr<std::unordered_map<uint32_t, std::vector<Point>>> construct_endpoints(std::vector<PyAlignment> &alignments)
 {
-    std::unordered_map<unsigned int, std::vector<Point>> endpoints;
+    std::unordered_map<uint32_t, std::vector<Point>> endpoints;
     endpoints.reserve(alignments.size());
     for (const auto &a : alignments)
     {
 
-        unsigned int q_cid = a.q_cid;
-        unsigned int s_cid = a.s_cid;
-        unsigned int q_begin = a.q_begin;
-        unsigned int s_begin = a.s_begin;
-        unsigned int q_end = a.q_end;
-        unsigned int s_end = a.s_end;
+        uint32_t q_cid = a.q_cid;
+        uint32_t s_cid = a.s_cid;
+        uint32_t q_begin = a.q_begin;
+        uint32_t s_begin = a.s_begin;
+        uint32_t q_end = a.q_end;
+        uint32_t s_end = a.s_end;
         
         // endpoints[s_cid].emplace_back(s_cid, q_cid, s_begin, q_begin, a, not is_end);
         // endpoints[s_cid].emplace_back(s_cid, q_cid, s_end, q_end, a, is_end);
@@ -203,11 +203,11 @@ std::shared_ptr<std::unordered_map<unsigned int, std::vector<Point>>> construct_
         }
         
     }
-    return std::make_shared<std::unordered_map<unsigned int, std::vector<Point>>>(endpoints);
+    return std::make_shared<std::unordered_map<uint32_t, std::vector<Point>>>(endpoints);
 }
 
 template <typename Lambda>
-void cluster_points(std::vector<Cluster<Point const *>> &clusters, bool &cluster_id, unsigned int max_separation,
+void cluster_points(std::vector<Cluster<Point const *>> &clusters, bool &cluster_id, uint32_t max_separation,
                     Lambda &&same_cluster, bool complete_link)
 {
     // loop through sorted endpoints and cluster
@@ -229,8 +229,8 @@ void cluster_points(std::vector<Cluster<Point const *>> &clusters, bool &cluster
     cluster_id = not cluster_id;
 }
 
-std::vector<Cluster<Point const *>> cluster_endpoints(std::unordered_map<unsigned int, std::vector<Point>> &endpoints,
-                                                      unsigned int max_separation = 75, bool complete_link = true)
+std::vector<Cluster<Point const *>> cluster_endpoints(std::unordered_map<uint32_t, std::vector<Point>> &endpoints,
+                                                      uint32_t max_separation = 75, bool complete_link = true)
 {
     std::vector<Cluster<Point const *>> all_clusters;
     // get total number of endpoints for reserve operation
@@ -266,7 +266,7 @@ std::vector<Cluster<Point const *>> cluster_endpoints(std::unordered_map<unsigne
 
 void initialize(
     ContigContainer &contigs,
-    std::unordered_map<unsigned int, std::vector<SetNode<Breakpoint> *>> &lookup)
+    std::unordered_map<uint32_t, std::vector<SetNode<Breakpoint> *>> &lookup)
 {
 
     // add start and end breakpoints to gluepoints
@@ -275,7 +275,7 @@ void initialize(
 
     for (const auto &c : contigs)
     {
-        unsigned int cid = c.GetId();
+        uint32_t cid = c.GetId();
         auto start = new SetNode<Breakpoint>(Breakpoint(cid, 0, PointType::START_RIGHT, true));
         auto end = new SetNode<Breakpoint>(Breakpoint(cid, c.GetLen(), PointType::END_LEFT, true));
 
@@ -286,7 +286,7 @@ void initialize(
 }
 
 std::vector<Point const *> find_overlapping_alignments(Breakpoint const &bp, std::vector<Point> const &endpoints,
-                                                       unsigned int max_separation)
+                                                       uint32_t max_separation)
 {
     std::vector<Point const *> overlapping_alignments;
     for (size_t i = 0; i < endpoints.size(); i += 2) {
@@ -303,12 +303,12 @@ std::vector<Point const *> find_overlapping_alignments(Breakpoint const &bp, std
     return overlapping_alignments;
 }
 
-unsigned int get_split_position(uint32_t q_pos, PyAlignment const &a)
+uint32_t get_split_position(uint32_t q_pos, PyAlignment const &a)
 {
-    unsigned int q_begin = a.q_begin;
-    unsigned int s_begin = a.s_begin;
-    unsigned int q_end = a.q_end;
-    unsigned int s_end = a.s_end;
+    uint32_t q_begin = a.q_begin;
+    uint32_t s_begin = a.s_begin;
+    uint32_t q_end = a.q_end;
+    uint32_t s_end = a.s_end;
 
      int complement_handler = (s_begin <= s_end) ? 1 : -1;
     if (complement_handler == 1) {
@@ -348,7 +348,7 @@ unsigned int get_split_position(uint32_t q_pos, PyAlignment const &a)
 }
 
 void merge_gp(std::vector<SetNode<Breakpoint> *> &gluepoints,
-              std::unordered_map<unsigned int, std::vector<SetNode<Breakpoint> *>> &lookup, unsigned int max_separation, PointType pointType)
+              std::unordered_map<uint32_t, std::vector<SetNode<Breakpoint> *>> &lookup, uint32_t max_separation, PointType pointType)
 {
     // get the first point with type is_end
 
@@ -692,19 +692,19 @@ void group_breakpoints_into_gluepoints(std::unordered_map<uint32_t, std::vector<
 
 void add_consensus_gluepoint(std::vector<SetNode<Breakpoint> *>::const_iterator left_arr,
                              std::vector<SetNode<Breakpoint> *>::const_iterator right_arr, std::vector<Gluepoint> &consensus_gps,
-                             unsigned int max_separation, uint64_t gp_id)
+                             uint32_t max_separation, uint64_t gp_id)
 {
     size_t cluster_sz = (*(right_arr - 1))->data.pos - (*left_arr)->data.pos;
-    unsigned int cid = (*left_arr)->data.cid;
+    uint32_t cid = (*left_arr)->data.cid;
     
     if (cluster_sz > max_separation)
     {
         consensus_gps.emplace_back(gp_id, cid, (*left_arr)->data.pos);
-        unsigned int repeats = std::floor(cluster_sz / max_separation);
-        unsigned int mode = cluster_sz / repeats;
+        uint32_t repeats = std::floor(cluster_sz / max_separation);
+        uint32_t mode = cluster_sz / repeats;
         for (size_t i = 1; i < repeats; i++)
         {
-            unsigned int pos = (*left_arr)->data.pos + i * mode;
+            uint32_t pos = (*left_arr)->data.pos + i * mode;
             consensus_gps.emplace_back(gp_id, cid, pos);
         }
         consensus_gps.emplace_back(gp_id, cid, (*(right_arr - 1))->data.pos);
@@ -712,7 +712,7 @@ void add_consensus_gluepoint(std::vector<SetNode<Breakpoint> *>::const_iterator 
     }
     else
     {
-        unsigned int consensus_pos = median(left_arr, right_arr, [](std::vector<SetNode<Breakpoint> *>::const_iterator const &a) -> unsigned int
+        uint32_t consensus_pos = median(left_arr, right_arr, [](std::vector<SetNode<Breakpoint> *>::const_iterator const &a) -> uint32_t
                                             { return (*a)->data.pos; });
         consensus_gps.emplace_back(gp_id, cid, consensus_pos);
         
@@ -1038,7 +1038,7 @@ std::vector<SequenceInterval> build_sequence_intervals(std::vector<Gluepoint> co
 
 std::vector<SequenceInterval> cpp_gen_gp(std::vector<PyAlignment> &alignments, ContigContainerPtr contigs)
 {
-    auto max_separation = config.GetValue<unsigned int>("max_separation");
+    auto max_separation = config.GetValue<uint32_t>("max_separation");
     std::cout << "construct endpoints from alignments\n";
     auto endpoints = construct_endpoints(alignments); // same output
     std::cout << "cluster endpoints: " << endpoints->size() << std::endl;

@@ -17,25 +17,25 @@ const uint8_t COMPATIBLE_TYPES= 3;
 
 struct Anchor
 {
-    unsigned int q_pos;  // query position
-    unsigned int s_pos;  // subject position
-    unsigned int s_cid;  // subject contig id
+    uint32_t q_pos;  // query position
+    uint32_t s_pos;  // subject position
+    uint32_t s_cid;  // subject contig id
     uint8_t type;
 };
 
 struct KmerMatch
 {
-    unsigned int q_pos;
-    unsigned int s_pos;
+    uint32_t q_pos;
+    uint32_t s_pos;
 };
 struct Alignment
 {
-    unsigned int q_cid;   // query contig id
-    unsigned int s_cid;   // subject contig id
-    unsigned int q_begin; // query alignment start position
-    unsigned int s_begin; // subject alignment start position
-    unsigned int q_end;   // query alignment end position
-    unsigned int s_end;   // subject alignment end position
+    uint32_t q_cid;   // query contig id
+    uint32_t s_cid;   // subject contig id
+    uint32_t q_begin; // query alignment start position
+    uint32_t s_begin; // subject alignment start position
+    uint32_t q_end;   // query alignment end position
+    uint32_t s_end;   // subject alignment end position
     //string ori;    // orientation
     //float seq_div; // sequence divergence
     std::vector<KmerMatch> km;  // The q_pos ordered kmer coordinates
@@ -45,12 +45,12 @@ struct PyAlignment
     PyAlignment(){}
     PyAlignment(const Alignment& a): q_cid{a.q_cid}, s_cid{a.s_cid}, q_begin{a.q_begin}, 
         s_begin{a.s_begin}, q_end{a.q_end}, s_end{a.s_end}{}
-    unsigned int q_cid;
-    unsigned int s_cid;
-    unsigned int q_begin;
-    unsigned int s_begin;
-    unsigned int q_end;
-    unsigned int s_end;
+    uint32_t q_cid;
+    uint32_t s_cid;
+    uint32_t q_begin;
+    uint32_t s_begin;
+    uint32_t q_end;
+    uint32_t s_end;
     std::string ToString() const
     {
         return Util::to_str(q_begin) + " " + Util::to_str(q_end) + " " + Util::to_str(q_cid) + " " +
@@ -61,38 +61,38 @@ struct PyAlignment
 struct Kmer
 {
     Kmer(){};
-    Kmer(const std::string& seq_, unsigned int pos_, uint8_t sign_):kmer{seq_}, pos{pos_}, sign{sign_}{}
+    Kmer(const std::string& seq_, uint32_t pos_, uint8_t sign_):kmer{seq_}, pos{pos_}, sign{sign_}{}
     std::string kmer;
-    unsigned int pos;
+    uint32_t pos;
     uint8_t sign;
 };
 
 struct Contig
 {
     Contig(){}
-    Contig(unsigned int cid_, unsigned int len_, const std::vector<Kmer>& sketch_, const std::string& hdr_):
+    Contig(uint32_t cid_, uint32_t len_, const std::vector<Kmer>& sketch_, const std::string& hdr_):
         cid{cid_}, len{len_}, hdr{hdr_}, sketch{sketch_}{}
-    unsigned int cid;  // contig id
-    unsigned int len;  // length of the contig
+    uint32_t cid;  // contig id
+    uint32_t len;  // length of the contig
     std::vector<Kmer> sketch;
     std::string hdr;
 };
 
 struct Coordinate
 {
-    Coordinate(unsigned int pos, unsigned int cid, uint8_t s): s_pos{pos}, s_cid{cid}, sign{s}{}
-    unsigned int s_pos;
-    unsigned int s_cid;
+    Coordinate(uint32_t pos, uint32_t cid, uint8_t s): s_pos{pos}, s_cid{cid}, sign{s}{}
+    uint32_t s_pos;
+    uint32_t s_cid;
     uint8_t sign;
 };
 
-void build_kmer_map(std::unordered_map<std::string, std::vector<Coordinate>> & kmer_map, const std::vector<Contig> & contigs, unsigned int k)
+void build_kmer_map(std::unordered_map<std::string, std::vector<Coordinate>> & kmer_map, const std::vector<Contig> & contigs, uint32_t k)
 {
     logger.Info("Building kmer map");
 
     std::vector<Contig>::const_iterator contig_it = contigs.begin();
     std::unordered_map<std::string, std::vector<Coordinate>>::iterator kmap_it;
-    unsigned int i, j;
+    uint32_t i, j;
     
     logger.Info("Indexing " + Util::to_str(contigs.size()) +  " contigs");
     kmer_map.reserve(app_stats.TotalSketchCount);
@@ -127,12 +127,12 @@ bool sort_by_contig_then_pos(const Anchor& one, const Anchor& two)
     return false;
 }
 
-unsigned int abs_uint32_t(unsigned int a, unsigned int b)
+uint32_t abs_uint32_t(uint32_t a, uint32_t b)
 {
     return (a>b)*(a-b) + (a<=b)*(b-a);
 }
 
-double compute_seq_divergence(const std::vector<Kmer> & sketch, unsigned int start_pos, unsigned int end_pos, unsigned int chain_len, uint32_t k)
+double compute_seq_divergence(const std::vector<Kmer> & sketch, uint32_t start_pos, uint32_t end_pos, uint32_t chain_len, uint32_t k)
 {
     /*
     computes maximum likelihood estimate of seq divergence according to minimap2 paper section 2.1.4
@@ -142,7 +142,7 @@ double compute_seq_divergence(const std::vector<Kmer> & sketch, unsigned int sta
     :param k: k-mer size
     :return: sequence divergence
     */
-    unsigned int tmp;
+    uint32_t tmp;
     if (start_pos <= end_pos)
         end_pos = end_pos + k;
     else{
@@ -185,19 +185,19 @@ int64_t get_max_chain_end(std::vector<double> & scrt)
 }
 
 std::vector<Alignment> chain_and_backtrack(std::vector<Contig>& container_buf, const Contig& contig, const std::unordered_map<std::string, std::vector<Coordinate>> & kmer_map,
-    const std::string& orientation, double divergence_threshold, unsigned int kmer_len, bool asymmentric, double large_gap = 2.0, 
-    double small_gap = 0.5, unsigned int max_jump = 200, unsigned int min_overlap = 100)
+    const std::string& orientation, double divergence_threshold, uint32_t kmer_len, bool asymmentric, double large_gap = 2.0, 
+    double small_gap = 0.5, uint32_t max_jump = 200, uint32_t min_overlap = 100)
 {
-    unsigned int q_len = contig.len;
+    uint32_t q_len = contig.len;
     std::unordered_map<std::string, std::vector<Coordinate>>::const_iterator kmap_it;
     std::vector<Coordinate>::const_iterator coord_it;
     std::vector<Alignment> alignments;
     std::vector<Anchor> anchors;
     std::vector<Kmer>::const_iterator sketch_it;
-    unsigned int q;
+    uint32_t q;
     int64_t r;
     int sign_flip;
-    unsigned int print_it = 0;
+    uint32_t print_it = 0;
 
     if(orientation == FWD)
     {
@@ -244,15 +244,15 @@ std::vector<Alignment> chain_and_backtrack(std::vector<Contig>& container_buf, c
     
     std::vector<KmerMatch> kmer_matches;
 
-    unsigned int min_q, max_q, min_s, max_s;
-    unsigned int q_next, s_next, q_prev, s_prev;
-    unsigned int jump_div, s_jump, q_jump;
-    unsigned int chain_start, chain_len;
+    uint32_t min_q, max_q, min_s, max_s;
+    uint32_t q_next, s_next, q_prev, s_prev;
+    uint32_t jump_div, s_jump, q_jump;
+    uint32_t chain_start, chain_len;
     int64_t pos, new_pos, mcs, mce, tmp;
     int64_t EXHAUST = -2;
     int64_t NEW_ALN = -1;
-    unsigned int last_match, first_match;
-    unsigned int max_id;
+    uint32_t last_match, first_match;
+    uint32_t max_id;
     uint8_t type_next, type_prev;
     double alpha;
     double gap_cost;
@@ -459,7 +459,7 @@ std::vector<PyAlignment> align_contigs(ContigContainerPtr container, int k, doub
     std::vector<Contig> container_buf;
     size_t idx, i;
     size_t nthreads =  num_threads;
-    unsigned int kmer_len = k;
+    uint32_t kmer_len = k;
     std::unordered_map<std::string, std::vector<Coordinate>> kmer_map;
     size_t print_chunk = std::ceil(N/10);
 
@@ -493,8 +493,8 @@ std::vector<PyAlignment> align_contigs(ContigContainerPtr container, int k, doub
     bool asym = asymmetric;
     double large_gap = lg;
     double small_gap = sg;
-    unsigned int max_jump = mj;
-    unsigned int min_overlap = mo;
+    uint32_t max_jump = mj;
+    uint32_t min_overlap = mo;
 
     #pragma omp parallel shared(thrd_aln, container_buf, kmer_map)
     {

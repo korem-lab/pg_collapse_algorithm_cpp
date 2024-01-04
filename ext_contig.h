@@ -20,21 +20,21 @@ class ExtContig
         std::string Seq;
         
         int GetId() const {return m_contig_id;}        
-        unsigned int GetFwdExt() const {return m_fwd_ext_sz; }
-        unsigned int GetBwdExt() const {return m_bwd_ext_sz; }  
-        unsigned int GetUnExtLen() {return m_unext_len;}
-        unsigned int GetLen() const {return Seq.size();}
+        uint32_t GetFwdExt() const {return m_fwd_ext_sz; }
+        uint32_t GetBwdExt() const {return m_bwd_ext_sz; }  
+        uint32_t GetUnExtLen() {return m_unext_len;}
+        uint32_t GetLen() const {return Seq.size();}
         bool GetIsTag() {return m_is_tag;}
         friend class PeExtReader;
 
     private:
         void parseHdr(const std::string& hdr);
 
-        unsigned int m_fwd_ext_sz;
-        unsigned int m_bwd_ext_sz; 
+        uint32_t m_fwd_ext_sz;
+        uint32_t m_bwd_ext_sz; 
         int m_sample_id;
         int m_contig_id = -1;
-        unsigned int m_unext_len;
+        uint32_t m_unext_len;
         bool m_is_tag = false;
 };
 
