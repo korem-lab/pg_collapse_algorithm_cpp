@@ -58,7 +58,7 @@ void ConfigReader::Initialize(const std::string& file_path)
     }    
 }
 
-std::unique_ptr<std::string> ConfigReader::GetAllKeyValues()
+std::string ConfigReader::GetAllKeyValues()
 {
     std::string s("\n>>>> config.ini <<<< \n");
     s.append("--------------------\n");
@@ -66,7 +66,7 @@ std::unique_ptr<std::string> ConfigReader::GetAllKeyValues()
     {
         s.append(keyVal.first + "=" + keyVal.second + "\n");
     }
-    return std::make_unique<std::string>(s);
+    return s;
 }
 
 template<>

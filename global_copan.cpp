@@ -13,7 +13,7 @@ void Util::InitializeServices(const char* config_name)
 
         logger.Start(log_file_dir, app_name);
         logger.Info("Initializing... ");
-        logger.Info(*config.GetAllKeyValues());
+        logger.Info(config.GetAllKeyValues());
     }
     catch(const std::exception& e)
     {

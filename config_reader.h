@@ -27,7 +27,7 @@ namespace Util
                 else 
                     throw key + " does not exist!";
             }
-            std::unique_ptr<std::string> GetAllKeyValues();
+            std::string GetAllKeyValues();
 
         private:
             
