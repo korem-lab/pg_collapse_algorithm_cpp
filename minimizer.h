@@ -37,7 +37,7 @@ const char int_to_char_map[] = {'A','C','G','T'};
 
 
 
-std::string unpack_kmer(unsigned int packed_kmer, unsigned int kmer_len);
+std::string unpack_kmer(uint32_t packed_kmer, uint32_t kmer_len);
 
 
 /* inline char num_to_char(uint8_t b)
@@ -49,10 +49,10 @@ std::string unpack_kmer(unsigned int packed_kmer, unsigned int kmer_len);
 
 struct Kmer
 {
-    unsigned int seq;
-    unsigned int pos;
+    uint32_t seq;
+    uint32_t pos;
     uint8_t sign;
-    Kmer(unsigned int s, unsigned int p, uint8_t sg) : seq(s), pos(p), sign(sg) {}
+    Kmer(uint32_t s, uint32_t p, uint8_t sg) : seq(s), pos(p), sign(sg) {}
     Kmer(const Kmer& k)
     {
         seq = k.seq;
@@ -69,7 +69,7 @@ struct Kmer
 
 struct KmerGenerator
 {
-    KmerGenerator(std::string const &s, uint8_t k, unsigned int mask, bool lex_low = false) : seq(s), k(k), mask(mask), lxl(lex_low)
+    KmerGenerator(std::string const &s, uint8_t k, uint32_t mask, bool lex_low = false) : seq(s), k(k), mask(mask), lxl(lex_low)
     {
         seq_it = seq.begin() + k;
         kmer = Kmer(pack(seq.begin(), seq_it), 0, POSITIVE);
@@ -100,7 +100,7 @@ struct KmerGenerator
         
         if (!init) // it's an intermediate call, and we need to pack a new base
         {            
-            unsigned int pos = seq_it - k - seq.begin() + 1;
+            uint32_t pos = seq_it - k - seq.begin() + 1;
             uint32_t n = char_to_num(*seq_it);
 
             kmer = Kmer(mask & (kmer.seq << 2 | n), pos, POSITIVE);            
@@ -123,12 +123,12 @@ struct KmerGenerator
     Kmer min_kmer_in_window(uint8_t w) const
     {
         std::string::const_iterator f = seq_it - w + 1; // move f to the start of the forward window
-        unsigned int _kmer = pack(f - k, f);
-        unsigned int _rev_kmer = pack_reverse(f - k, f, true);
+        uint32_t _kmer = pack(f - k, f);
+        uint32_t _rev_kmer = pack_reverse(f - k, f, true);
 
         // select lowest kmer
-        unsigned int min_k = (_kmer < _rev_kmer) ? _kmer : _rev_kmer;
-        unsigned int min_pos = f - seq.begin() - k;
+        uint32_t min_k = (_kmer < _rev_kmer) ? _kmer : _rev_kmer;
+        uint32_t min_pos = f - seq.begin() - k;
         uint8_t sign = (_kmer < _rev_kmer) ? POSITIVE : NEGATIVE;
 
         // point to the next unprocessed characters
@@ -155,10 +155,10 @@ struct KmerGenerator
         return {min_k, min_pos, sign};
     }
 
-    unsigned int pack(std::string::const_iterator begin, std::string::const_iterator end, bool complement = false) const
+    uint32_t pack(std::string::const_iterator begin, std::string::const_iterator end, bool complement = false) const
     {
-        unsigned int _kmer = 0;
-        unsigned int base;
+        uint32_t _kmer = 0;
+        uint32_t base;
         while (begin < end)
         {
             base = char_to_num(*begin);
@@ -167,10 +167,10 @@ struct KmerGenerator
         }
         return mask & (!complement ? _kmer : ~_kmer);
     }
-    unsigned int pack_reverse(std::string::const_iterator begin, std::string::const_iterator end, bool complement = false) const
+    uint32_t pack_reverse(std::string::const_iterator begin, std::string::const_iterator end, bool complement = false) const
     {
-        unsigned int _kmer = 0;
-        unsigned int base;
+        uint32_t _kmer = 0;
+        uint32_t base;
         int i = 0;
         while (begin < end)
         {
@@ -185,17 +185,17 @@ struct KmerGenerator
     std::string seq;
     std::string::iterator seq_it;
     uint8_t k;
-    unsigned int mask;
+    uint32_t mask;
     bool lxl, init;
     Kmer kmer, rev_kmer;
     
 };
 
-void count_kmers(std::string const &s, std::unordered_map<unsigned int, unsigned int> &kc, uint8_t k);
+void count_kmers(std::string const &s, std::unordered_map<uint32_t, uint32_t> &kc, uint8_t k);
 
-std::unordered_set<unsigned int> get_high_frequency_kmers(std::unordered_map<unsigned int, unsigned int> kc);
+std::unordered_set<uint32_t> get_high_frequency_kmers(std::unordered_map<uint32_t, uint32_t> kc);
 
-std::vector<Kmer> sketch_string(std::string const &s, uint8_t w, uint8_t k, std::unordered_set<unsigned int> const &hfk);
+std::vector<Kmer> sketch_string(std::string const &s, uint8_t w, uint8_t k, std::unordered_set<uint32_t> const &hfk);
 
 std::vector<std::vector<Kmer>> sketch_contigs(ContigContainerPtr contigs, uint8_t w, uint8_t k, std::vector<std::vector<Kmer>>& sketches);
 

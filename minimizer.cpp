@@ -53,14 +53,14 @@ char mzr::num_to_char(uint8_t b)
     }
 }
     
-std::string mzr::unpack_kmer(unsigned int packed_kmer, unsigned int kmer_len)
+std::string mzr::unpack_kmer(uint32_t packed_kmer, uint32_t kmer_len)
 {
-    unsigned int mask = 0x00000003;
+    uint32_t mask = 0x00000003;
     int8_t shift = kmer_len * 2 - 2;
     std::string kmer;
     while (shift >= 0)
     {
-        unsigned int base = mask & (packed_kmer >> shift);
+        uint32_t base = mask & (packed_kmer >> shift);
         kmer = kmer + mzr::num_to_char(base);
         shift -= 2;
     }
@@ -68,7 +68,7 @@ std::string mzr::unpack_kmer(unsigned int packed_kmer, unsigned int kmer_len)
        
 }
 
-void mzr::count_kmers(const std::string &s, std::unordered_map<unsigned int, unsigned int> &kc, uint8_t k)
+void mzr::count_kmers(const std::string &s, std::unordered_map<uint32_t, uint32_t> &kc, uint8_t k)
 {
     KmerGenerator kmer_gen(s, k, 0x3FFFFFFF, true);
     while (!kmer_gen.empty())
@@ -78,9 +78,9 @@ void mzr::count_kmers(const std::string &s, std::unordered_map<unsigned int, uns
     }
 }
 
-std::unordered_set<unsigned int> mzr::get_high_frequency_kmers(std::unordered_map<unsigned int, unsigned int> kc)
+std::unordered_set<uint32_t> mzr::get_high_frequency_kmers(std::unordered_map<uint32_t, uint32_t> kc)
 {
-    std::unordered_set<unsigned int> high_freq_kmers;   
+    std::unordered_set<uint32_t> high_freq_kmers;   
     auto percentile = 1 - config.GetValue<double>("high_freq_kmer_filter");
 
     if (percentile < 1) // if percentile == 1 then don't filter
@@ -110,7 +110,7 @@ std::unordered_set<unsigned int> mzr::get_high_frequency_kmers(std::unordered_ma
     return high_freq_kmers;
 }
 
-std::vector<Kmer> mzr::sketch_string(std::string const &s, uint8_t w, uint8_t k, std::unordered_set<unsigned int> const &hfk)
+std::vector<Kmer> mzr::sketch_string(std::string const &s, uint8_t w, uint8_t k, std::unordered_set<uint32_t> const &hfk)
 {
     // setup
     std::vector<Kmer> sketch;
@@ -120,7 +120,7 @@ std::vector<Kmer> mzr::sketch_string(std::string const &s, uint8_t w, uint8_t k,
     Kmer min_k = kmer_gen.get_kmer();
 
     // Initialize min_k to first minimizer of the window w
-    unsigned int window_pos = 1; // the global window position (window is s[window_pos-w: window_pos)
+    uint32_t window_pos = 1; // the global window position (window is s[window_pos-w: window_pos)
 
     while (window_pos < w && !kmer_gen.empty())
     {
@@ -172,7 +172,7 @@ std::vector<std::vector<Kmer>> mzr::sketch_contigs(ContigContainerPtr contigs, u
     // count the kmers in the input
     logger.Info("counting kmers...");
     auto kc_size = (app_stats.TotalContigSeqSize / contigs->size() - k + 1) * contigs->size();
-    std::unordered_map<unsigned int, unsigned int> kc;
+    std::unordered_map<uint32_t, uint32_t> kc;
     kc.reserve(kc_size);
     
     for (const ExtContig &c : *contigs)
@@ -183,7 +183,7 @@ std::vector<std::vector<Kmer>> mzr::sketch_contigs(ContigContainerPtr contigs, u
     logger.Info("total kmers: " + Util::to_str(kc.size())); 
 
     // extract high-frequency kmers
-    std::unordered_set<unsigned int> hfk = get_high_frequency_kmers(kc);
+    std::unordered_set<uint32_t> hfk = get_high_frequency_kmers(kc);
 
     logger.Info("total avoided high-frequency kmers " + Util::to_str(hfk.size()));
 
